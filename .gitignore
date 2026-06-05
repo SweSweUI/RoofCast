@@ -1,0 +1,46 @@
+# ---- dependencies ----
+/node_modules
+/.pnp
+.pnp.js
+
+# ---- next.js ----
+/.next/
+/out/
+next-env.d.ts
+tsconfig.tsbuildinfo
+
+# ---- production ----
+/build
+
+# ---- env (NEVER commit secrets) ----
+.env
+.env*.local
+.env.local
+
+# ---- SENSITIVE DATA — never commit. ALL data is generated locally from the
+# ---- user's own Excel exports; the repo ships CODE ONLY. ----
+/data/raw/
+/data/cache/
+/data/altis.db
+/data/altis.db-*
+/data/_inspect*.py
+*.xlsx
+*.xls
+# derived artifacts contain real company names/aggregate financials -> ignore,
+# keep only the placeholder so the folder exists on clone.
+/data/artifacts/*
+!/data/artifacts/.gitkeep
+
+# ---- python ----
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# ---- misc ----
+.DS_Store
+*.log
+/coverage
+.vscode/
+.idea/

@@ -1,0 +1,41 @@
+{
+  "name": "altis-weather-cashflow",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Weather-aware 13-week cashflow forecasting platform for a PE-backed roofing portfolio (Altis Groep challenge).",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "pipeline": "python3 pipeline/run_all.py",
+    "ingest": "python3 pipeline/ingest.py",
+    "weather": "python3 pipeline/weather.py",
+    "stats": "python3 pipeline/stats.py",
+    "snapshot": "tsx lib/forecast/snapshot.ts",
+    "test:forecast": "tsx --test lib/forecast/*.test.ts",
+    "test:py": "python3 -m pytest pipeline/tests -q",
+    "test": "npm run test:forecast && npm run test:py"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "date-fns": "^3.6.0",
+    "next": "14.2.32",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "recharts": "2.13.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.4",
+    "@types/react": "^18.3.11",
+    "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.14",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.2"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  }
+}
