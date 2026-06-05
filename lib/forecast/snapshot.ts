@@ -63,7 +63,7 @@ function persist(r: ForecastResult) {
 }
 
 for (const s of SCENARIOS) {
-  const { portfolio, companies } = computePortfolio(s);
+  const { portfolio, companies } = await computePortfolio(s);
   persist(portfolio);
   for (const c of companies) persist(c);
 }

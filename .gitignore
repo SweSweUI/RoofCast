@@ -38,6 +38,16 @@ __pycache__/
 venv/
 .pytest_cache/
 
+# ---- iOS / Xcode (app source is committed; build output + secrets are not) ----
+ios/build/
+ios/DerivedData/
+ios/.build/
+ios/**/*.xcodeproj
+ios/Altis/Secrets.swift
+ios/Package.resolved
+ios/screenshot.png
+*.xcuserstate
+
 # ---- misc ----
 .DS_Store
 *.log

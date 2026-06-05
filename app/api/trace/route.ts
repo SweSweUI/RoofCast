@@ -15,7 +15,7 @@ export async function GET(req: Request) {
 
     // Portfolio-level trace: per-company net contributions to the week.
     if (code === 'portfolio') {
-      const { portfolio } = computePortfolio(scenario, overrides);
+      const { portfolio } = await computePortfolio(scenario, overrides);
       const week = portfolio.weeks.find((w) => w.weekStart === weekParam) ?? portfolio.weeks[0];
       return Response.json({
         company: { code: 'portfolio', name: 'Portfolio' },
@@ -27,14 +27,14 @@ export async function GET(req: Request) {
       });
     }
 
-    const co = getCompanyByCode(code);
+    const co = await getCompanyByCode(code);
     if (!co) return Response.json({ error: 'unknown_company' }, { status: 404 });
 
-    const r = computeForecast(scenario, co.id, overrides);
+    const r = await computeForecast(scenario, co.id, overrides);
     const week = r.weeks.find((w) => w.weekStart === weekParam) ?? r.weeks[0];
-    const history = getWeeklyFinancials(co.id);
+    const history = await getWeeklyFinancials(co.id);
     const analog = analogWeeks(history, week.weekStart);
-    const transactions = getAnalogTransactions(co.id, analog, 12);
+    const transactions = await getAnalogTransactions(co.id, analog, 12);
 
     return Response.json({
       company: { code: co.code, name: co.shortName },

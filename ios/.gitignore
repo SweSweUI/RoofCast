@@ -1,0 +1,24 @@
+# ---- Altis iOS — gitignore (scoped to ios/) ----
+
+# Secrets: anon key is public/RLS-protected but governance says don't commit it.
+# Build it from .env.local; commit only Secrets.example.swift.
+Altis/Secrets.swift
+
+# Generated Xcode project (regenerate with `xcodegen generate`)
+*.xcodeproj
+*.xcworkspace
+
+# Build output / derived data
+build/
+DerivedData/
+.build/
+
+# SwiftPM
+.swiftpm/
+Package.resolved
+
+# Screenshots captured from the simulator
+screenshot.png
+
+# macOS cruft
+.DS_Store

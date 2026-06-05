@@ -11,11 +11,11 @@ const arg = process.argv[2] ?? 'ummels';
 const scenario = (process.argv[3] ?? 'base') as Scenario;
 const eur = (x: number) => `€${Math.round(x).toLocaleString('en-US')}`;
 
-console.log(`Forecast start week: ${forecastStartWeek()}`);
-console.log(`Companies with data: ${forecastCompanies().map((c) => c.code).join(', ')}\n`);
+console.log(`Forecast start week: ${await forecastStartWeek()}`);
+console.log(`Companies with data: ${(await forecastCompanies()).map((c) => c.code).join(', ')}\n`);
 
 if (arg === 'portfolio') {
-  const { portfolio, companies } = computePortfolio(scenario);
+  const { portfolio, companies } = await computePortfolio(scenario);
   console.log(`PORTFOLIO — ${scenario}`);
   console.log(`  cash-in ${eur(portfolio.kpis.totalCashIn)}  cash-out ${eur(portfolio.kpis.totalCashOut)}  net ${eur(portfolio.kpis.netCashFlow)}`);
   console.log(`  min closing ${eur(portfolio.kpis.minClosingCash)} @ ${portfolio.kpis.minClosingWeek}  breach=${portfolio.kpis.covenantBreach}`);
@@ -24,9 +24,9 @@ if (arg === 'portfolio') {
     console.log(`   - ${c.companyName.padEnd(16)} net ${eur(c.kpis.netCashFlow).padStart(12)}  min ${eur(c.kpis.minClosingCash).padStart(12)}`);
   }
 } else {
-  const co = getCompanyByCode(arg);
+  const co = await getCompanyByCode(arg);
   if (!co) throw new Error(`unknown company ${arg}`);
-  const r = computeForecast(scenario, co.id);
+  const r = await computeForecast(scenario, co.id);
   console.log(`${r.companyName} — ${scenario}`);
   console.log('  wk  weekStart    cashIn      cashOut     net         closing     wxRisk  rainWD  live');
   for (const w of r.weeks) {

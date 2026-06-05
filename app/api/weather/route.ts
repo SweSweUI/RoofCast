@@ -10,10 +10,10 @@ export async function GET(req: Request) {
     const sp = new URL(req.url).searchParams;
     const scenario = parseScenario(sp);
     const code = sp.get('company') ?? 'ummels';
-    const co = getCompanyByCode(code);
+    const co = await getCompanyByCode(code);
     if (!co) return Response.json({ error: 'unknown_company' }, { status: 404 });
 
-    const r = computeForecast(scenario, co.id, parseOverrides(sp));
+    const r = await computeForecast(scenario, co.id, parseOverrides(sp));
     const series = r.weeks.map((w) => ({
       weekStart: w.weekStart,
       weekIndex: w.weekIndex,
@@ -24,7 +24,7 @@ export async function GET(req: Request) {
       risk: w.weatherRisk,
     }));
     const recentHistory = co.weatherLocationId
-      ? getWeatherWeekly(co.weatherLocationId).filter((w) => !w.isForecast).slice(-16)
+      ? (await getWeatherWeekly(co.weatherLocationId)).filter((w) => !w.isForecast).slice(-16)
       : [];
 
     return Response.json({

@@ -12,13 +12,14 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    return Response.json({
-      inventory: getInventory(),
-      files: getSourceFiles(),
-      accounts: getAccountsSummary(),
-      assumptions: getAssumptions(),
-      covenants: getCovenants(null),
-    });
+    const [inventory, files, accounts, assumptions, covenants] = await Promise.all([
+      getInventory(),
+      getSourceFiles(),
+      getAccountsSummary(),
+      getAssumptions(),
+      getCovenants(null),
+    ]);
+    return Response.json({ inventory, files, accounts, assumptions, covenants });
   } catch (e) {
     return jsonError(e);
   }

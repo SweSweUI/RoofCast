@@ -9,11 +9,12 @@ import type {
 } from '../types';
 import {
   getCompanies,
+  getCompaniesWithFinancials,
   getCovenants,
+  getEarliestForecastWeatherWeek,
   getWeatherWeekly,
   getWeeklyFinancials,
 } from '../queries';
-import { queryOne } from '../db';
 import { computeCompanyForecast } from './engine';
 import { DEFAULT_OPENING_CASH, OPENING_CASH, resolveParams } from './config';
 import { currentWeekKey, type WeekKey } from './dates';
@@ -28,37 +29,31 @@ const rank = (r: RiskLevel) => WORST.indexOf(r);
 
 /** Anchor the 13-week horizon to the live-weather "current week" so the demo is
  *  coherent regardless of wall-clock: start = earliest live-forecast week. */
-export function forecastStartWeek(today = new Date()): WeekKey {
-  const row = queryOne<{ w: string }>(
-    "SELECT MIN(week_start) AS w FROM weather_weekly WHERE is_forecast = 1",
-  );
-  return row?.w ?? currentWeekKey(today);
+export async function forecastStartWeek(today = new Date()): Promise<WeekKey> {
+  const w = await getEarliestForecastWeatherWeek();
+  return w ?? currentWeekKey(today);
 }
 
-export function forecastCompanies(): Company[] {
-  // keep only companies that actually have weekly financials
-  return getCompanies().filter((c) => {
-    const n = queryOne<{ n: number }>(
-      'SELECT COUNT(*) AS n FROM weekly_financials WHERE company_id = ?',
-      c.id,
-    );
-    return (n?.n ?? 0) > 0;
-  });
+export async function forecastCompanies(): Promise<Company[]> {
+  return getCompaniesWithFinancials();
 }
 
-export function computeForecast(
+export async function computeForecast(
   scenario: Scenario,
   companyId: number,
   overrides: Partial<ForecastParams> = {},
   today = new Date(),
-): ForecastResult {
-  const company = getCompanies().find((c) => c.id === companyId);
+): Promise<ForecastResult> {
+  const company = (await getCompanies()).find((c) => c.id === companyId);
   if (!company) throw new Error(`Unknown company ${companyId}`);
-  const history = getWeeklyFinancials(companyId);
-  const weather = company.weatherLocationId ? getWeatherWeekly(company.weatherLocationId) : [];
-  const covenants = getCovenants(companyId);
+  const [history, weather, covenants, startWeek] = await Promise.all([
+    getWeeklyFinancials(companyId),
+    company.weatherLocationId ? getWeatherWeekly(company.weatherLocationId) : Promise.resolve([]),
+    getCovenants(companyId),
+    forecastStartWeek(today),
+  ]);
   const openingCash = OPENING_CASH[company.code] ?? DEFAULT_OPENING_CASH;
-  const params = resolveParams(scenario, { startWeek: forecastStartWeek(today), openingCash }, overrides);
+  const params = resolveParams(scenario, { startWeek, openingCash }, overrides);
   return computeCompanyForecast({ company, history, weather, covenants, params, scenario });
 }
 
@@ -68,15 +63,16 @@ export interface PortfolioForecast {
 }
 
 /** Aggregate the per-company forecasts into a portfolio cash view. */
-export function computePortfolio(
+export async function computePortfolio(
   scenario: Scenario,
   overrides: Partial<ForecastParams> = {},
   today = new Date(),
-): PortfolioForecast {
-  const companies = forecastCompanies().map((c) =>
-    computeForecast(scenario, c.id, overrides, today),
+): Promise<PortfolioForecast> {
+  const list = await forecastCompanies();
+  const companies = await Promise.all(
+    list.map((c) => computeForecast(scenario, c.id, overrides, today)),
   );
-  const portfolioCov = getCovenants(null).find((c) => c.metric === 'min_13w_liquidity');
+  const portfolioCov = (await getCovenants(null)).find((c) => c.metric === 'min_13w_liquidity');
   const threshold = portfolioCov?.threshold ?? null;
 
   const ref = companies[0]?.weeks ?? [];

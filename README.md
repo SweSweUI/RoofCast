@@ -4,7 +4,23 @@ A financial-operations platform for a PE-backed roofing portfolio (Altis Groep c
 
 > **How will cash move over the next 13 weeks, how does weather delay billing and cash timing, and where does covenant or operational risk appear?**
 
-Four operating companies from four different accounting systems are reconciled into one model. A weather-delay signal (Open-Meteo) shifts the timing of projected billing. Four role-specific dashboards — CFO, PE Board, Opco MD, Project Lead — present the same reconciled numbers at different levels of detail.
+Four operating companies from four different accounting systems are reconciled into one model. A weather-delay signal (Open-Meteo) shifts the timing of projected billing. Role-specific dashboards — CFO, PE Board, Opco MD, Project Lead (+ Admin) — present the same reconciled numbers at different levels of detail.
+
+---
+
+## Platform surfaces
+
+This is a full multi-surface platform on **one Supabase backend**:
+
+- **Web dashboard** — Next.js, 6 role views + Admin, behind Supabase Auth login with role-based access.
+- **Supabase (Postgres)** — system of record. All objects are namespaced `altis_*`, protected by Row-Level Security (authenticated users read; only the service role writes). See [docs/supabase.md](docs/supabase.md).
+- **Native iOS app (SwiftUI)** — signs in with the same accounts and reads the same `altis_*` tables via PostgREST. See [docs/ios.md](docs/ios.md).
+- **Auth & RBAC** — 5 roles (`cfo`, `board`, `opco`, `project`, `admin`). Each role's navigation and routes are gated; the Admin view manages users and triggers data purge.
+- **Data governance** — the app shows a persistent deletion reminder; [DATA_HANDLING.md](DATA_HANDLING.md) + `scripts/purge.sh` enforce the 3-day deletion rule.
+
+The platform also runs **local-first** without Supabase: set `DATA_BACKEND=sqlite` (or omit Supabase env) and it reads the local SQLite store with no auth gate — handy for offline development and the test suite.
+
+> **Data handling:** Altis data is anonymised and for the hackathon only. Copies must be deleted within 3 days after the event. Nothing sensitive is committed (raw data, the SQLite DB, caches, `.env*`, and keys are all gitignored). See [DATA_HANDLING.md](DATA_HANDLING.md).
 
 ---
 
@@ -44,12 +60,16 @@ Data flows top-to-bottom. The forecast engine is a pure function that reads from
 | Layer | Choice | Why |
 |---|---|---|
 | Frontend | Next.js 14 (App Router, TypeScript, Tailwind, Recharts) | Single app, server components for DB reads, client for interactive charts |
-| Database | SQLite (`data/altis.db`) via Node's built-in `node:sqlite` | Zero deployment friction, no native modules, read-only in prod |
-| Data pipeline | Python 3 (pandas, openpyxl, requests) | Excel parsing, dedup, weather fetch |
+| Cloud backend | Supabase (Postgres + Auth + PostgREST), `altis_*` tables, RLS | One backend shared by web + iOS; auth, RBAC, RLS |
+| Local DB | SQLite (`data/altis.db`) via Node's built-in `node:sqlite` | Zero-friction offline/dev fallback (`DATA_BACKEND=sqlite`) |
+| Data layer | Async dispatcher (`lib/data/`) — Supabase or SQLite | One query surface; lazy-loads only the active backend |
+| Auth / RBAC | Supabase Auth + `lib/rbac.ts` + `middleware.ts` | Email/password login, 5 roles, route + nav gating |
+| Mobile | Native iOS (SwiftUI + supabase-swift), `ios/` | Same backend, same accounts, xcodegen + Xcode build |
+| Data pipeline | Python 3 (pandas, openpyxl, requests) | Excel parsing, dedup, weather fetch, Supabase push |
 | Forecast engine | TypeScript (`lib/forecast/`) | Pure function, co-located with app, testable with `tsx --test` |
 | Weather | Open-Meteo archive + forecast APIs | Free, no API key, 16-day live forecast + historical ERA5 back to 2023 |
 
-Node >= 22.5.0 is required (`node:sqlite` is built in from Node 22.5).
+Node >= 22.5.0 is required (`node:sqlite` is built in from Node 22.5). The iOS app needs Xcode 16+ and `xcodegen`.
 
 ---
 
@@ -101,13 +121,43 @@ npx tsx lib/forecast/snapshot.ts
 
 Runs the TypeScript engine for all three scenarios and all companies and writes the output into `forecast_weeks` and `trace_links` tables. Required for the traceability panel and the `/methodology` view to show persisted data.
 
-### 5. Start the development server
+### 5. (Optional) Push to Supabase + enable auth
+
+To run the cloud backend (Supabase Auth + RBAC + the iOS app), configure `.env.local` with your Supabase project (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_PROJECT_REF`, `SUPABASE_ACCESS_TOKEN`, `DATA_BACKEND=supabase`), then:
+
+```bash
+python3 pipeline/push_supabase.py
+```
+
+This applies `supabase/schema.sql` (namespaced `altis_*` tables + RLS + `altis_profiles`), bulk-loads the data, and creates 5 demo role accounts. With Supabase configured, the web app requires login; without it, the app runs locally on SQLite with no auth. See [docs/supabase.md](docs/supabase.md). Skip this step to stay local-only (`DATA_BACKEND=sqlite`).
+
+**Demo accounts** (password `AltisDemo!2026`): `cfo@`, `board@`, `opco@`, `project@`, `admin@` `altis.demo`.
+
+### 6. Start the development server
 
 ```bash
 npm run dev
 ```
 
-The app starts at [http://localhost:3000](http://localhost:3000). The home route redirects to `/cfo`. Switch companies and scenarios using the global selector in the navigation bar.
+The app starts at [http://localhost:3000](http://localhost:3000). In Supabase mode you land on `/login` (use a demo account or the quick-login buttons); each role is routed to its default view. In local mode the home route redirects straight to `/cfo`. Switch companies and scenarios using the global selector in the navigation bar.
+
+### 7. (Optional) Run the iOS app
+
+```bash
+cd ios && xcodegen generate
+xcodebuild -project Altis.xcodeproj -scheme Altis \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build
+```
+
+Generate `ios/Altis/Secrets.swift` from `.env.local` first (see [docs/ios.md](docs/ios.md)). The app signs in with the same demo accounts and reads the same Supabase backend.
+
+### Deleting the data (3-day rule)
+
+```bash
+scripts/purge.sh        # removes local data + all altis_* cloud objects + demo users
+```
+
+See [DATA_HANDLING.md](DATA_HANDLING.md). The Admin view also has an in-app "purge portfolio data" button.
 
 ---
 

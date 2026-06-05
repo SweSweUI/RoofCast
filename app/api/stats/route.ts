@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const s = getStatsArtifact('stats.json');
+    const s = await getStatsArtifact('stats.json');
     if (!s) {
       return Response.json({
         pending: true,

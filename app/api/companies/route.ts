@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    return Response.json({ companies: forecastCompanies() });
+    return Response.json({ companies: await forecastCompanies() });
   } catch (e) {
     return jsonError(e);
   }

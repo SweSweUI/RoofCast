@@ -13,15 +13,15 @@ export async function GET(req: Request) {
     const company = sp.get('company') ?? 'portfolio';
 
     if (company === 'portfolio') {
-      const { portfolio, companies } = computePortfolio(scenario, overrides);
+      const { portfolio, companies } = await computePortfolio(scenario, overrides);
       // strip per-company trace to keep the payload lean (fetch via /api/trace)
       const lean = companies.map((c) => ({ ...c, trace: {} }));
       return Response.json({ portfolio, companies: lean });
     }
 
-    const co = getCompanyByCode(company);
+    const co = await getCompanyByCode(company);
     if (!co) return Response.json({ error: 'unknown_company', company }, { status: 404 });
-    return Response.json(computeForecast(scenario, co.id, overrides));
+    return Response.json(await computeForecast(scenario, co.id, overrides));
   } catch (e) {
     return jsonError(e);
   }

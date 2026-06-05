@@ -15,7 +15,7 @@ export async function GET(req: Request) {
     const overrides = parseOverrides(sp);
     const company = sp.get('company') ?? 'portfolio';
 
-    const co = company === 'portfolio' ? null : getCompanyByCode(company);
+    const co = company === 'portfolio' ? null : await getCompanyByCode(company);
     if (company !== 'portfolio' && !co) {
       return Response.json({ error: 'unknown_company', company }, { status: 404 });
     }
@@ -23,7 +23,7 @@ export async function GET(req: Request) {
     const out: Record<string, unknown> = {};
     for (const s of SCENARIOS as Scenario[]) {
       const r: ForecastResult =
-        co == null ? computePortfolio(s, overrides).portfolio : computeForecast(s, co.id, overrides);
+        co == null ? (await computePortfolio(s, overrides)).portfolio : await computeForecast(s, co.id, overrides);
       out[s] = {
         weeks: r.weeks.map((w) => ({
           weekStart: w.weekStart,
