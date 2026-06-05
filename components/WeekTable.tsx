@@ -1,4 +1,5 @@
 'use client';
+import clsx from 'clsx';
 import type { ForecastWeek } from '@/lib/types';
 import { eur, signedEur, weekRange } from '@/lib/format';
 import { Pill, RiskBadge, Td, Th } from './ui';
@@ -25,6 +26,7 @@ export function WeekTable({
             <Th right>Net</Th>
             <Th right>Closing</Th>
             {showHeadroom && <Th right>Headroom</Th>}
+            <Th right>Conf</Th>
             <Th>Risk</Th>
             <Th></Th>
           </tr>
@@ -72,6 +74,16 @@ export function WeekTable({
                   )}
                 </Td>
               )}
+              <Td right>
+                <span
+                  className={clsx(
+                    'tnum',
+                    w.confidence >= 75 ? 'text-risk-low' : w.confidence >= 60 ? 'text-risk-medium' : 'text-risk-high',
+                  )}
+                >
+                  {w.confidence}%
+                </span>
+              </Td>
               <Td>
                 <RiskBadge level={w.riskLevel} />
               </Td>

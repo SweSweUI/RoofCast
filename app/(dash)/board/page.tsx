@@ -22,6 +22,7 @@ import { CashflowChart } from '@/components/charts/CashflowChart';
 import { CovenantChart } from '@/components/charts/CovenantChart';
 import { ScenarioCompareChart } from '@/components/charts/ScenarioCompareChart';
 import { CompanyCompareChart } from '@/components/charts/CompanyCompareChart';
+import { RiskOverview } from '@/components/RiskOverview';
 
 export default function BoardPage() {
   const { scenario } = useDashboardState();
@@ -167,6 +168,9 @@ export default function BoardPage() {
           sub="Open-Meteo · then seasonal"
         />
       </div>
+
+      {/* risk-first: portfolio weather-to-cash risk signals */}
+      <RiskOverview company="portfolio" scenario={scenario} />
 
       {/* 3. Portfolio cashflow chart */}
       <Card

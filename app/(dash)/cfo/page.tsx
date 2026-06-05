@@ -13,6 +13,7 @@ import { DriverSplitChart } from '@/components/charts/DriverSplitChart';
 import { ScenarioCompareChart } from '@/components/charts/ScenarioCompareChart';
 import { CovenantChart } from '@/components/charts/CovenantChart';
 import { CompanyCompareChart } from '@/components/charts/CompanyCompareChart';
+import { RiskOverview } from '@/components/RiskOverview';
 
 export default function CfoPage() {
   const { scenario, company } = useDashboardState();
@@ -58,6 +59,9 @@ export default function CfoPage() {
         <Kpi label="Covenant" value={breach ? 'Breach' : threshold == null ? 'n/a' : 'Headroom'} tone={breach ? 'bad' : 'good'} sub={threshold == null ? 'no floor set' : `floor ${eurCompact(threshold)}`} hint={label} />
         <Kpi label="Weeks at risk" value={`${k.weeksAtRisk}/13`} tone={k.weeksAtRisk > 4 ? 'warn' : 'default'} sub="liquidity / weather" />
       </div>
+
+      {/* risk-first: surface the eight weather-to-cash risk signals before the charts */}
+      <RiskOverview company={company} scenario={scenario} />
 
       <Card title="13-week cash-in / cash-out & closing cash" subtitle="Bars = weekly flows · line = closing cash · shaded = live-forecast weeks">
         <CashflowChart weeks={result.weeks} />

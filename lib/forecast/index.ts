@@ -117,6 +117,7 @@ export async function computePortfolio(
       closingCash: closing,
       covenantHeadroom: headroom == null ? null : Math.round(headroom),
       riskLevel: finalRisk,
+      confidence: Math.round(slice.reduce((s, w) => s + w.confidence, 0) / slice.length),
       explanation:
         `Portfolio week ${base.weekStart}: cash-in ${eur(sum((w) => w.forecastCashIn))}, ` +
         `cash-out ${eur(sum((w) => w.forecastCashOut))}, closing ${eur(closing)}` +

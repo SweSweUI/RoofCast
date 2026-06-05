@@ -22,6 +22,7 @@ import { CashflowChart } from '@/components/charts/CashflowChart';
 import { DriverSplitChart } from '@/components/charts/DriverSplitChart';
 import { CovenantChart } from '@/components/charts/CovenantChart';
 import { WeatherCalendar, type WeatherCell } from '@/components/charts/WeatherCalendar';
+import { RiskOverview } from '@/components/RiskOverview';
 import type { ForecastWeek } from '@/lib/types';
 
 export default function OpcoPage() {
@@ -156,6 +157,9 @@ export default function OpcoPage() {
           sub="Open-Meteo near-term"
         />
       </div>
+
+      {/* risk-first: this opco's weather-to-cash risk signals */}
+      <RiskOverview company={code} scenario={scenario} />
 
       {/* Cashflow chart */}
       <Card

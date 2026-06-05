@@ -161,6 +161,18 @@ export function computeCompanyForecast(input: ForecastInput): ForecastResult {
     const finalRank = Math.max(liqRank, item.risk === 'high' ? 1 : 0);
     const riskLevel = LEVEL[finalRank];
 
+    // Forecast confidence: live-weather weeks are more certain than seasonal,
+    // high-weather weeks add uncertainty, and confidence decays with horizon.
+    const confidence = Math.max(
+      45,
+      Math.min(
+        95,
+        (item.isLive ? 88 : 70) -
+          (item.risk === 'high' ? 8 : item.risk === 'medium' ? 4 : 0) -
+          Math.max(0, w - 3) * 1.5,
+      ),
+    );
+
     weeks.push({
       weekIndex: w,
       weekStart: key,
@@ -186,6 +198,7 @@ export function computeCompanyForecast(input: ForecastInput): ForecastResult {
       closingCash: r0(closing),
       covenantHeadroom: headroom == null ? null : r0(headroom),
       riskLevel,
+      confidence: Math.round(confidence),
       explanation: buildExplanation({
         key,
         item,

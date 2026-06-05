@@ -135,7 +135,19 @@ export interface ForecastWeek {
   closingCash: number;
   covenantHeadroom: number | null;
   riskLevel: RiskLevel;
+  confidence: number; // 0-100 forecast confidence for this week
   explanation: string;
+}
+
+export interface RiskSignal {
+  key: string;
+  title: string;
+  level: RiskLevel;
+  impactedWeeks: string[]; // week starts
+  eurImpact: number | null;
+  confidence: number; // 0-100
+  reason: string; // plain English
+  trace: string; // data / assumption lineage
 }
 
 export interface TraceLink {
