@@ -1,0 +1,19 @@
+{
+  "name": "altis-demo-video",
+  "version": "1.0.0",
+  "description": "Altis platform demo video – Remotion project",
+  "scripts": {
+    "start": "npx remotion studio",
+    "build": "npx remotion render AltisDemo ../submission/video/altis_demo.mp4 --concurrency 2",
+    "render": "npx remotion render AltisDemo ../submission/video/altis_demo.mp4 --concurrency 2",
+    "compositions": "npx remotion compositions"
+  },
+  "dependencies": {
+    "remotion": "^4.0.0",
+    "@remotion/cli": "^4.0.0",
+    "@remotion/media-utils": "^4.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

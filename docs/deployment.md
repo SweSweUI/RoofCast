@@ -228,3 +228,77 @@ rm -f data/altis.db data/altis.db-shm data/altis.db-wal
 rm -f data/artifacts/data_inventory.json data/artifacts/stats.json \
        data/artifacts/stats_summary.txt data/artifacts/weather_summary.json
 ```
+
+---
+
+## Public deployment (Vercel + Supabase)
+
+This section covers deploying the **live public URL** with Vercel as the hosting platform and Supabase as the cloud data backend. The existing Option A (local) and Option B (self-hosted) instructions above remain unchanged.
+
+### Why `DATA_BACKEND=supabase` is required on Vercel
+
+Vercel's serverless runtime does not include `node:sqlite`. Setting `DATA_BACKEND=supabase` causes the lazy dispatcher in `lib/data/index.ts` to load only the Supabase backend module — `node:sqlite` is never imported and its absence causes no error. Without this variable the app defaults to whichever backend is auto-detected; on Vercel that detection will fail at runtime because the SQLite file is not present.
+
+### Prerequisites
+
+1. A Supabase project with the schema applied and data loaded (see Option C above and `docs/supabase.md`).
+2. The Vercel CLI installed (`npm i -g vercel`) and a Vercel account.
+3. Data loaded to Supabase: `python3 pipeline/push_supabase.py` (run locally against the Supabase project once the pipeline has built `data/altis.db`).
+
+Note: Open-Meteo requires no API key; weather data is fetched live by the app at request time.
+
+### Required environment variables
+
+Set these in the Vercel project dashboard under **Settings → Environment Variables**, or pass them with `vercel env add` before the first deploy.
+
+| Variable | Where | Description |
+|---|---|---|
+| `DATA_BACKEND` | All | Must be `supabase`. Switches the data layer away from SQLite. |
+| `NEXT_PUBLIC_SUPABASE_URL` | All | Your Supabase project URL (e.g. `https://xyzxyz.supabase.co`). Exposed to the browser. |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | All | Supabase anon/public key. Exposed to the browser. Used for auth and RLS-gated reads. |
+| `SUPABASE_SERVICE_ROLE_KEY` | **Server only — secret** | Service role key. Never expose to the client. Used for admin writes (pipeline push, data purge). |
+| `SUPABASE_PROJECT_REF` | Server only | Project reference ID (e.g. `xyzxyzxyz`). Used by the management API. |
+| `SUPABASE_ACCESS_TOKEN` | **Server only — secret** | Supabase personal access token. Required for programmatic project management. |
+
+Mark `SUPABASE_SERVICE_ROLE_KEY` and `SUPABASE_ACCESS_TOKEN` as **Secret** in the Vercel UI so they are never logged or exposed in build output.
+
+### One-command deploy
+
+```bash
+# 1. Authenticate with Vercel (once)
+vercel login
+
+# 2. Link to your Vercel project (first time only; creates .vercel/project.json)
+vercel link
+
+# 3. Set all required environment variables (if not already set in the dashboard)
+vercel env add DATA_BACKEND
+vercel env add NEXT_PUBLIC_SUPABASE_URL
+vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY
+vercel env add SUPABASE_SERVICE_ROLE_KEY   # mark secret
+vercel env add SUPABASE_PROJECT_REF
+vercel env add SUPABASE_ACCESS_TOKEN       # mark secret
+
+# 4. Deploy to production
+vercel --prod
+```
+
+After the deploy completes, Vercel prints the public URL. Copy it into `submission/README_SUBMISSION.md`.
+
+### Region
+
+`vercel.json` sets `"regions": ["fra1"]` (Frankfurt) to keep the app co-located with the EU Supabase region. Change this if your Supabase project is in a different region.
+
+### Automatic deployments
+
+Connect the repository to your Vercel project (**Settings → Git**) to trigger a new deployment on every push to `main`. The CI workflow (`.github/workflows/ci.yml`) runs first; if it passes, Vercel deploys automatically.
+
+### Data loading
+
+Before the first deploy, or after re-running the pipeline with new data:
+
+```bash
+python3 pipeline/push_supabase.py
+```
+
+This applies `supabase/schema.sql`, bulk-loads all tables, and creates the 5 demo role accounts. The Supabase URL, service role key, and project ref are read from `.env.local`. Subsequent pipeline runs can push incrementally — see `pipeline/push_supabase.py` for options.

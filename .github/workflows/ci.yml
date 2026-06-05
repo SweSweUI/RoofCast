@@ -1,0 +1,71 @@
+# Altis CI
+#
+# Two jobs run in parallel:
+#
+#   build  — TypeScript unit tests + Next.js build.
+#            Needs no data files and no real secrets.
+#            node:sqlite requires Node >= 22.5; we pin 22.
+#
+#   python — Python pipeline tests.
+#            All tests that touch the SQLite DB call
+#            pytest.skip("data/altis.db not found …") when the file is absent,
+#            so this job always exits green on a clean checkout.
+#
+# Note: `npm test` runs both TS + Python together; CI splits them so the build
+# job stays entirely data-free and fast.
+
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  # ---------------------------------------------------------------------------
+  build:
+    name: TypeScript tests + Next.js build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Forecast engine tests are pure TypeScript — no database, no secrets.
+      - name: Run TypeScript forecast tests
+        run: npm run test:forecast
+
+      # Build succeeds without Supabase env: the data dispatcher falls back to
+      # sqlite mode, and the app guards DbUnavailableError at request time.
+      # Do NOT set real secrets here.
+      - name: Build Next.js app
+        run: npm run build
+
+  # ---------------------------------------------------------------------------
+  python:
+    name: Python pipeline tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install pytest
+        run: pip install pytest
+
+      # All tests in this suite use the `db` fixture which calls
+      # pytest.skip("data/altis.db not found …") when the database is absent.
+      # On a clean checkout the entire module is skipped; exit code is 0.
+      - name: Run Python pipeline tests
+        run: python -m pytest pipeline/tests -q

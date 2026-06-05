@@ -62,22 +62,25 @@ export function computeRiskSignals(result: ForecastResult, ctx: RiskContext): Ri
     trace: 'Assumption: debtor-payment profile, mean ≈ 4 weeks (configurable).',
   };
 
-  // 3) Payment Terms Risk (sensitivity to debtor days)
-  const termsDelta = ctx.paymentStressCashIn == null ? null : k.totalCashIn - ctx.paymentStressCashIn;
+  // 3) Payment Terms Risk — sensitivity (magnitude) of in-horizon cash-in to a
+  // ~2-week change in debtor days. Reported as magnitude: the carry-in of
+  // pre-horizon billing makes the *direction* ambiguous, so we surface exposure,
+  // not a directional claim.
+  const termsMag = ctx.paymentStressCashIn == null ? null : Math.abs(k.totalCashIn - ctx.paymentStressCashIn);
   const termsLevel: RiskLevel =
-    termsDelta == null ? 'medium' : termsDelta > 0.1 * k.totalCashIn ? 'high' : termsDelta > 0.05 * k.totalCashIn ? 'medium' : 'low';
+    termsMag == null ? 'medium' : termsMag > 0.07 * k.totalCashIn ? 'high' : termsMag > 0.03 * k.totalCashIn ? 'medium' : 'low';
   const paymentTerms: RiskSignal = {
     key: 'payment_terms',
     title: 'Payment Terms Risk',
     level: termsLevel,
     impactedWeeks: [],
-    eurImpact: termsDelta == null ? null : Math.round(termsDelta),
+    eurImpact: termsMag == null ? null : Math.round(termsMag),
     confidence: 55,
     reason:
-      termsDelta == null
+      termsMag == null
         ? 'Debtor-days assumption drives cash-in timing; sensitivity not computed.'
-        : `If debtor days extend ~2 weeks, in-horizon cash-in falls ≈ ${eur(termsDelta)}.`,
-    trace: 'Assumption sensitivity: payment-lag profile shifted +2 weeks.',
+        : `A ~2-week change in debtor days moves in-horizon cash-in by ≈ ${eur(termsMag)} (timing sensitivity).`,
+    trace: 'Assumption sensitivity: payment-lag profile shifted ±2 weeks.',
   };
 
   // 4) Cash-Out Assumption Risk (no AP/cost ledger in the source data)

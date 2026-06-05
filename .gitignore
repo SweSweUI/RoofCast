@@ -38,6 +38,12 @@ __pycache__/
 venv/
 .pytest_cache/
 
+# ---- video (Remotion project — source committed, deps/renders are not) ----
+video/node_modules/
+video/out/
+video/.remotion/
+video/package-lock.json
+
 # ---- iOS / Xcode (app source is committed; build output + secrets are not) ----
 ios/build/
 ios/DerivedData/
