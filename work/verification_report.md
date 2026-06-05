@@ -48,3 +48,21 @@ Current framing is already honest (revenue/billing-only source data; cash-out/op
 - **Round D (Submission):** 8 submission docs + 12 real screenshots (Playwright, incl. mobile).
 - **Round E (Video/CI/AppStore/Deploy):** Remotion project (+ storyboard fallback), CI workflow, app-store prep doc, Vercel deployment prep.
 - **Round F (Final QA):** test + build, no secrets/data, assets present, docs truthful, commit.
+
+## Resolution (all gaps closed)
+
+| Gap | Status |
+|---|---|
+| Risk-first UI / 8 risk cards | ✅ `lib/forecast/risks.ts` + `RiskOverview` on CFO/Board/Opco; verified in-browser |
+| Forecast confidence per week | ✅ in engine + week table + risk API |
+| `submission/` package (8 docs) | ✅ created, numbers verified, honest framing |
+| Screenshots (12) | ✅ real Playwright captures in `submission/screenshots/` |
+| Remotion video | ✅ `submission/video/altis_demo.mp4` (82s, 1080p) + storyboard fallback; overclaiming header fixed |
+| `.github/workflows/ci.yml` | ✅ green on clean checkout (TS tests + build; python skips w/o DB) |
+| `ios/README_APP_STORE_PREP.md` | ✅ created |
+| Public deployment | ⚠️ prepared (`vercel.json` + docs); **no live URL** — `vercel` CLI not installed / not authed, needs owner's Vercel login |
+| Overclaiming check | ✅ billing-to-cash framing throughout; "no bank cashflow / suggestive not causal" in app, docs, video |
+
+**Bug fixed during QA:** Payment Terms Risk reported a directional "falls" with an unreliable sign (pre-horizon carry-in distorts direction) → changed to sensitivity *magnitude*.
+
+Final: `npm test` 7+8 green · `npm run build` passes · no secrets/data committed · commits `7ce5f69` (risk) + `e1f265a` (submission).
