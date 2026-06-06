@@ -13,6 +13,10 @@ const ibmPlex = IBM_Plex_Sans({ subsets: ['latin'], weight: ['600', '700'] });
 const HOLD_MS = 2200;
 const FADE_MS = 600;
 
+// Play the splash at most once per browser session ("startup"). Without this
+// the root layout can re-trigger it on client navigations / button clicks.
+const SPLASH_SHOWN_KEY = 'roofcast:splash-shown';
+
 /**
  * Full-screen launch animation shown on every load (desktop only). A static
  * RoofCast logo sits on top with the animated app name beneath it; only the
@@ -23,6 +27,12 @@ export function LaunchSplash() {
   const [done, setDone] = useState(false);
 
   useEffect(() => {
+    // Already shown this session → skip straight to done, no replay.
+    if (typeof window !== 'undefined' && sessionStorage.getItem(SPLASH_SHOWN_KEY)) {
+      setDone(true);
+      return;
+    }
+    sessionStorage.setItem(SPLASH_SHOWN_KEY, '1');
     const fadeTimer = setTimeout(() => setLeaving(true), HOLD_MS);
     const doneTimer = setTimeout(() => setDone(true), HOLD_MS + FADE_MS);
     return () => {
