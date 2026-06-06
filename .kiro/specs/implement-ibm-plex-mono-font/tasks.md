@@ -45,7 +45,7 @@ This implementation plan applies IBM Plex Mono as the primary font across the en
   - Test that `app/layout.tsx` contains no font link tags with 'Roboto'
   - _Requirements: 4.1, 4.2, 4.4_
 
-- [-] 4. Checkpoint - Manual browser testing
+- [ ] 4. Checkpoint - Manual browser testing
   - Open the application in Chrome, Firefox, and Safari
   - Verify IBM Plex Mono renders correctly across all text elements
   - Test with Google Fonts CDN blocked (browser DevTools) to verify fallback fonts work

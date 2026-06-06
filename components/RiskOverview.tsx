@@ -4,6 +4,7 @@ import { useApi } from '@/lib/client/hooks';
 import type { RiskLevel, RiskSignal, Scenario } from '@/lib/types';
 import { eurCompact } from '@/lib/format';
 import { Card, LoadingBlock, RiskBadge } from './ui';
+import { FlippingCard } from './ui/flipping-card';
 
 interface RisksResponse {
   meanConfidence: number;
@@ -46,35 +47,44 @@ export function RiskOverview({ company, scenario }: { company: string; scenario:
     >
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {signals.map((s) => (
-          <div
+          <FlippingCard
             key={s.key}
-            className={clsx('rounded-md border border-l-4 border-panel-line bg-panel p-3', BORDER[s.level])}
-          >
-            <div className="flex items-start justify-between gap-2">
-              <h3 className="text-xs font-semibold text-ink">{s.title}</h3>
-              <RiskBadge level={s.level} />
-            </div>
-            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-2xs text-ink-muted tnum">
-              {s.eurImpact != null && (
-                <span>
-                  <span className="text-ink-faint">€ impact </span>
-                  <span className="font-semibold text-ink-soft">{eurCompact(s.eurImpact)}</span>
-                </span>
-              )}
-              <span>
-                <span className="text-ink-faint">conf </span>
-                <span className="font-semibold text-ink-soft">{s.confidence}%</span>
-              </span>
-              {s.impactedWeeks.length > 0 && (
-                <span>
-                  <span className="text-ink-faint">weeks </span>
-                  <span className="font-semibold text-ink-soft">{s.impactedWeeks.length}</span>
-                </span>
-              )}
-            </div>
-            <p className="mt-1.5 text-2xs leading-relaxed text-ink-soft">{s.reason}</p>
-            <p className="mt-1 text-[10px] leading-snug text-ink-faint">{s.trace}</p>
-          </div>
+            height={200}
+            width={280}
+            className={clsx('border-l-4', BORDER[s.level])}
+            frontContent={
+              <div className="flex h-full w-full flex-col justify-between p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <h3 className="text-xs font-semibold text-ink">{s.title}</h3>
+                  <RiskBadge level={s.level} />
+                </div>
+                <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-0.5 text-2xs text-ink-muted tnum">
+                  {s.eurImpact != null && (
+                    <span>
+                      <span className="text-ink-faint">€ impact </span>
+                      <span className="font-semibold text-ink-soft">{eurCompact(s.eurImpact)}</span>
+                    </span>
+                  )}
+                  <span>
+                    <span className="text-ink-faint">conf </span>
+                    <span className="font-semibold text-ink-soft">{s.confidence}%</span>
+                  </span>
+                  {s.impactedWeeks.length > 0 && (
+                    <span>
+                      <span className="text-ink-faint">weeks </span>
+                      <span className="font-semibold text-ink-soft">{s.impactedWeeks.length}</span>
+                    </span>
+                  )}
+                </div>
+              </div>
+            }
+            backContent={
+              <div className="flex h-full w-full flex-col justify-center p-4">
+                <p className="text-2xs leading-relaxed text-ink-soft">{s.reason}</p>
+                <p className="mt-2 text-[10px] leading-snug text-ink-faint">{s.trace}</p>
+              </div>
+            }
+          />
         ))}
       </div>
     </Card>
