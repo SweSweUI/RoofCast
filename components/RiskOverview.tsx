@@ -63,18 +63,25 @@ export function RiskOverview({
             width={280}
             className={clsx('border-l-4', BORDER[s.level])}
             frontContent={
-              <div className="flex h-full w-full flex-col justify-between p-3">
+              <div className="flex h-full w-full flex-col justify-between p-4">
                 <div className="flex items-start justify-between gap-2">
-                  <h3 className="text-xs font-semibold text-ink">{s.title}</h3>
+                  <h3 className="text-lg font-semibold leading-tight text-ink">{s.title}</h3>
                   <RiskBadge level={s.level} />
                 </div>
-                <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-0.5 text-2xs text-ink-muted tnum">
-                  {s.eurImpact != null && (
-                    <span>
-                      <span className="text-ink-faint">€ impact </span>
-                      <span className="font-semibold text-ink-soft">{eurCompact(s.eurImpact)}</span>
-                    </span>
+                <div className="tnum">
+                  {s.eurImpact != null ? (
+                    <>
+                      <div className="text-3xl font-bold leading-none text-ink">{eurCompact(s.eurImpact)}</div>
+                      <div className="mt-1 text-2xs uppercase tracking-wide text-ink-faint">estimated € impact</div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-3xl font-bold leading-none text-ink">{s.confidence}%</div>
+                      <div className="mt-1 text-2xs uppercase tracking-wide text-ink-faint">forecast confidence</div>
+                    </>
                   )}
+                </div>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 text-sm text-ink-muted tnum">
                   <span>
                     <span className="text-ink-faint">conf </span>
                     <span className="font-semibold text-ink-soft">{s.confidence}%</span>
