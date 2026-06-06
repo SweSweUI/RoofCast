@@ -1,23 +1,28 @@
 import SwiftUI
 
 struct WeatherView: View {
-    /// Brunssum.
-    private let locationId = 1
-    private let locationName = "Brunssum"
-
+    @State private var companies: [Company] = []
+    @State private var selectedCompanyId: Int?
     @State private var weeks: [WeatherWeek] = []
     @State private var loading = false
     @State private var error: String?
 
     private var forecastWeeks: [WeatherWeek] { weeks.filter(\.isForecastFlag) }
-    private var historyWeeks: [WeatherWeek] { weeks.filter { !$0.isForecastFlag } }
+    private var historyWeeks: [WeatherWeek] { Array(weeks.filter { !$0.isForecastFlag }.suffix(16)) }
+    private var companyOptions: [Company] { companies.filter { $0.weatherLocationId != nil } }
+    private var selectedCompany: Company? {
+        companyOptions.first { $0.id == selectedCompanyId } ?? companyOptions.first
+    }
+    private var locationName: String {
+        selectedCompany?.locationName ?? selectedCompany?.displayName ?? "Weather location"
+    }
 
     var body: some View {
         NavigationStack {
             Group {
-                if let error, weeks.isEmpty {
-                    ErrorState(message: error) { Task { await load() } }
-                } else if loading && weeks.isEmpty {
+                if let error, companies.isEmpty {
+                    ErrorState(message: error) { Task { await loadCompaniesAndWeather() } }
+                } else if loading && companies.isEmpty {
                     ProgressView("Loading weather…")
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
@@ -26,11 +31,27 @@ struct WeatherView: View {
             }
             .navigationTitle("Weather")
         }
-        .task { await load() }
+        .task { await loadCompaniesAndWeather() }
+        .onChange(of: selectedCompanyId) { _, _ in
+            Task { await loadWeatherOnly() }
+        }
     }
 
     private var content: some View {
         List {
+            Section {
+                Picker("Company", selection: $selectedCompanyId) {
+                    ForEach(companyOptions) { company in
+                        Text(company.displayName).tag(Optional(company.id))
+                    }
+                }
+                .pickerStyle(.menu)
+            } footer: {
+                if selectedCompany?.usesProxyLocation == true {
+                    Text("This is a dataset-level weather proxy, not a confirmed project coordinate.")
+                }
+            }
+
             if !forecastWeeks.isEmpty {
                 Section {
                     ForEach(forecastWeeks) { WeatherRow(week: $0) }
@@ -48,13 +69,30 @@ struct WeatherView: View {
             }
         }
         .listStyle(.insetGrouped)
-        .refreshable { await load() }
+        .refreshable { await loadCompaniesAndWeather(forceCompanies: true) }
     }
 
-    private func load() async {
+    private func loadCompaniesAndWeather(forceCompanies: Bool = false) async {
         loading = true
         error = nil
         defer { loading = false }
+        do {
+            let service = SupabaseService.shared
+            if companies.isEmpty || forceCompanies {
+                companies = try await service.companies()
+                selectedCompanyId = selectedCompanyId ?? companyOptions.first?.id
+            }
+            try await loadWeatherOnly()
+        } catch {
+            self.error = error.localizedDescription
+        }
+    }
+
+    private func loadWeatherOnly() async {
+        guard let locationId = selectedCompany?.weatherLocationId else {
+            weeks = []
+            return
+        }
         do {
             weeks = try await SupabaseService.shared.weather(locationId: locationId)
         } catch {

@@ -54,9 +54,9 @@ export const OPENING_CASH: Record<string, number> = {
 export const DEFAULT_OPENING_CASH = 300000;
 
 export const SCENARIO_NOTE: Record<Scenario, string> = {
-  base: 'Live Open-Meteo forecast for the near term, then ISO-week seasonal climatology.',
-  wet_quarter: 'Stress case: ~50% more rain workdays than seasonal normal across the horizon.',
-  dry_quarter: 'Benign case: ~50% fewer rain workdays than seasonal normal across the horizon.',
+  base: 'Operating forecast: live Open-Meteo near term, then ISO-week seasonal climatology.',
+  wet_quarter: 'Sensitivity only: ~50% more rain workdays than seasonal normal after the live forecast window.',
+  dry_quarter: 'Sensitivity only: ~50% fewer rain workdays than seasonal normal after the live forecast window.',
 };
 
 export function resolveParams(

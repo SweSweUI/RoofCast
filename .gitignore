@@ -60,3 +60,5 @@ ios/screenshot.png
 /coverage
 .vscode/
 .idea/
+# scratch error logs (macOS pasteboard / ffmpeg failures — not project files)
+/err*.txt

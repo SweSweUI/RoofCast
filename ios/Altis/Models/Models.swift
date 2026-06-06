@@ -13,9 +13,9 @@ enum Scenario: String, CaseIterable, Identifiable, Sendable {
 
     var label: String {
         switch self {
-        case .base: return "Base"
-        case .wetQuarter: return "Wet quarter"
-        case .dryQuarter: return "Dry quarter"
+        case .base: return "Live forecast"
+        case .wetQuarter: return "Wet sensitivity"
+        case .dryQuarter: return "Dry sensitivity"
         }
     }
 }
@@ -89,8 +89,12 @@ struct Company: Decodable, Identifiable, Sendable {
     let shortName: String?
     let name: String
     let locationName: String?
+    let latitude: Double?
+    let longitude: Double?
     let sourceSystem: String?
+    let sourceConfidence: String?
     let weatherLocationId: Int?
+    let isAssumption: Int?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -98,12 +102,18 @@ struct Company: Decodable, Identifiable, Sendable {
         case shortName = "short_name"
         case name
         case locationName = "location_name"
+        case latitude
+        case longitude
         case sourceSystem = "source_system"
+        case sourceConfidence = "source_confidence"
         case weatherLocationId = "weather_location_id"
+        case isAssumption = "is_assumption"
     }
 
     /// Display name preferring the short label.
     var displayName: String { shortName?.isEmpty == false ? shortName! : name }
+    var hasCoordinate: Bool { latitude != nil && longitude != nil }
+    var usesProxyLocation: Bool { (isAssumption ?? 0) != 0 }
 }
 
 // MARK: - Forecast week
@@ -119,6 +129,7 @@ struct ForecastWeek: Decodable, Identifiable, Sendable {
     let isLiveWeather: Int
     let forecastCashIn: Double
     let forecastCashOut: Double
+    let weatherAdjustment: Double
     let netCashFlow: Double
     let closingCash: Double
     let covenantHeadroom: Double?
@@ -134,6 +145,7 @@ struct ForecastWeek: Decodable, Identifiable, Sendable {
         case isLiveWeather = "is_live_weather"
         case forecastCashIn = "forecast_cash_in"
         case forecastCashOut = "forecast_cash_out"
+        case weatherAdjustment = "weather_adjustment"
         case netCashFlow = "net_cash_flow"
         case closingCash = "closing_cash"
         case covenantHeadroom = "covenant_headroom"

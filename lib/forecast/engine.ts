@@ -276,7 +276,11 @@ function buildExplanation(a: {
     `Cash-out ${eur(a.fcCashOut)} (materials/subcontractor/labour/overhead). Closing cash ${eur(a.closing)}` +
       (a.headroom == null ? '.' : `, covenant headroom ${eur(a.headroom)}.`),
   );
-  parts.push(`Scenario: ${a.scenario.replace('_', ' ')}.`);
+  parts.push(
+    a.scenario === 'base'
+      ? 'Forecast basis: live weather operating forecast.'
+      : `Forecast basis: internal ${a.scenario.replace('_', ' ')} stress test.`,
+  );
   return parts.join(' ');
 }
 

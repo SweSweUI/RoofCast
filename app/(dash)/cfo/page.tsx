@@ -1,8 +1,8 @@
 'use client';
 import { useState } from 'react';
-import { useDashboardState, useApi } from '@/lib/client/hooks';
+import { useDashboardState } from '@/lib/client/hooks';
 import { pickThreshold, useForecast } from '@/lib/client/forecast';
-import { SCENARIO_LABELS, type Scenario } from '@/lib/types';
+import { SCENARIO_LABELS } from '@/lib/types';
 import { SCENARIO_NOTE } from '@/lib/forecast/config';
 import { eur, eurCompact, signedEur, dateShort } from '@/lib/format';
 import { Card, Kpi, LoadingBlock, Pill, SectionTitle } from '@/components/ui';
@@ -10,7 +10,6 @@ import { WeekTable } from '@/components/WeekTable';
 import { TracePanel } from '@/components/TracePanel';
 import { CashflowChart } from '@/components/charts/CashflowChart';
 import { DriverSplitChart } from '@/components/charts/DriverSplitChart';
-import { ScenarioCompareChart } from '@/components/charts/ScenarioCompareChart';
 import { CovenantChart } from '@/components/charts/CovenantChart';
 import { CompanyCompareChart } from '@/components/charts/CompanyCompareChart';
 import { RiskOverview } from '@/components/RiskOverview';
@@ -18,7 +17,6 @@ import { RiskOverview } from '@/components/RiskOverview';
 export default function CfoPage() {
   const { scenario, company } = useDashboardState();
   const { result, companies, loading, error } = useForecast(company, scenario);
-  const scenarios = useApi<any>(`/api/scenarios?company=${encodeURIComponent(company)}`);
   const [week, setWeek] = useState<string | null>(null);
 
   if (error) {
@@ -34,15 +32,11 @@ export default function CfoPage() {
   const k = result.kpis;
   const { threshold, label } = pickThreshold(result);
   const breach = k.covenantBreach;
-  const sc = scenarios.data?.scenarios;
-  const scenarioSeries = sc
-    ? { base: sc.base?.weeks, wet_quarter: sc.wet_quarter?.weeks, dry_quarter: sc.dry_quarter?.weeks }
-    : {};
 
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-2">
-        <SectionTitle sub={`${result.companyName} · ${SCENARIO_LABELS[scenario]} scenario · 13 weeks from ${dateShort(result.weeks[0].weekStart)}`}>
+        <SectionTitle sub={`${result.companyName} · ${SCENARIO_LABELS[scenario]} · 13 weeks from ${dateShort(result.weeks[0].weekStart)}`}>
           CFO — Operating Cash Forecast
         </SectionTitle>
         <Pill tone="accent" title={SCENARIO_NOTE[scenario]}>
@@ -71,8 +65,8 @@ export default function CfoPage() {
         <Card title="Cash-out drivers by week" subtitle="Materials · subcontractor · labour · overhead (configurable assumptions)">
           <DriverSplitChart weeks={result.weeks} />
         </Card>
-        <Card title="Scenario comparison — closing cash" subtitle="Base vs wet-quarter vs dry-quarter (timing of cash, not total work)">
-          {sc ? <ScenarioCompareChart series={scenarioSeries} /> : <LoadingBlock label="Computing scenarios…" />}
+        <Card title="Weather forecast timing impact" subtitle="Live weather-driven cash timing shifts in the operating forecast">
+          <WeatherImpactList weeks={result.weeks} />
         </Card>
       </div>
 
@@ -105,7 +99,7 @@ export default function CfoPage() {
       <p className="text-2xs text-ink-faint">
         Cash-in = facturation collected on a debtor-payment profile. Cash-out drivers, opening cash and covenant
         floors are configurable assumptions (revenue-only source data). See{' '}
-        <a className="text-accent underline" href={`/methodology?scenario=${scenario}&company=${company}`}>Methodology</a> and{' '}
+        <a className="text-accent underline" href={`/methodology?company=${company}`}>Methodology</a> and{' '}
         <a className="text-accent underline" href="/data-quality">Data Quality</a>.
       </p>
 

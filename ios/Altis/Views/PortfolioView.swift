@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct PortfolioView: View {
-    @State private var scenario: Scenario = .base
+    private let scenario: Scenario = .base
     @State private var weeks: [ForecastWeek] = []
     @State private var loading = false
     @State private var error: String?
@@ -27,19 +27,11 @@ struct PortfolioView: View {
                 }
             }
         }
-        .task(id: scenario) { await load() }
+        .task { await load() }
     }
 
     private var content: some View {
         List {
-            Section {
-                Picker("Scenario", selection: $scenario) {
-                    ForEach(Scenario.allCases) { Text($0.label).tag($0) }
-                }
-                .pickerStyle(.segmented)
-                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
-            }
-
             Section {
                 kpiGrid
                     .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))

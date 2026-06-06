@@ -79,7 +79,7 @@ struct SupabaseService {
     func companies() async throws -> [Company] {
         try await client
             .from("altis_companies")
-            .select("id,code,short_name,name,location_name,source_system,weather_location_id")
+            .select("id,code,short_name,name,location_name,latitude,longitude,source_system,source_confidence,weather_location_id,is_assumption")
             .order("id")
             .execute()
             .value

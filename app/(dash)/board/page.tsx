@@ -1,9 +1,8 @@
 'use client';
 import { useState } from 'react';
-import { useDashboardState, useApi } from '@/lib/client/hooks';
+import { useDashboardState } from '@/lib/client/hooks';
 import { pickThreshold, useForecast } from '@/lib/client/forecast';
-import { SCENARIO_LABELS, type Scenario } from '@/lib/types';
-import { SCENARIO_NOTE } from '@/lib/forecast/config';
+import { SCENARIO_LABELS } from '@/lib/types';
 import { eur, eurCompact, signedEur, dateShort } from '@/lib/format';
 import {
   Card,
@@ -20,14 +19,12 @@ import { WeekTable } from '@/components/WeekTable';
 import { TracePanel } from '@/components/TracePanel';
 import { CashflowChart } from '@/components/charts/CashflowChart';
 import { CovenantChart } from '@/components/charts/CovenantChart';
-import { ScenarioCompareChart } from '@/components/charts/ScenarioCompareChart';
 import { CompanyCompareChart } from '@/components/charts/CompanyCompareChart';
 import { RiskOverview } from '@/components/RiskOverview';
 
 export default function BoardPage() {
   const { scenario } = useDashboardState();
   const { result, companies, loading, error } = useForecast('portfolio', scenario);
-  const scenarios = useApi<any>(`/api/scenarios?company=portfolio`);
   const [week, setWeek] = useState<string | null>(null);
 
   if (error) {
@@ -45,14 +42,6 @@ export default function BoardPage() {
   const k = result.kpis;
   const { threshold, label } = pickThreshold(result);
   const breach = k.covenantBreach;
-  const sc = scenarios.data?.scenarios;
-  const scenarioSeries = sc
-    ? {
-        base: sc.base?.weeks,
-        wet_quarter: sc.wet_quarter?.weeks,
-        dry_quarter: sc.dry_quarter?.weeks,
-      }
-    : {};
 
   // Companies at risk: covenantBreach OR weeksAtRisk > 4
   const atRisk = (companies ?? []).filter(
@@ -68,66 +57,17 @@ export default function BoardPage() {
     return a.kpis.minClosingCash - b.kpis.minClosingCash;
   });
 
-  // Scenario summary data
-  const baseSc = sc?.base;
-  const wetSc = sc?.wet_quarter;
-  const drySc = sc?.dry_quarter;
-
-  const deltaWet =
-    baseSc && wetSc
-      ? baseSc.kpis.totalCashIn - wetSc.kpis.totalCashIn
-      : null;
-
-  const scenarioRows: Array<{
-    key: Scenario;
-    label: string;
-    netCash: number | null;
-    minLiquidity: number | null;
-    weeksAtRisk: number | null;
-  }> = [
-    {
-      key: 'base',
-      label: SCENARIO_LABELS.base,
-      netCash: baseSc?.kpis?.netCashFlow ?? null,
-      minLiquidity: baseSc?.kpis?.minClosingCash ?? null,
-      weeksAtRisk: baseSc?.kpis?.weeksAtRisk ?? null,
-    },
-    {
-      key: 'wet_quarter',
-      label: SCENARIO_LABELS.wet_quarter,
-      netCash: wetSc?.kpis?.netCashFlow ?? null,
-      minLiquidity: wetSc?.kpis?.minClosingCash ?? null,
-      weeksAtRisk: wetSc?.kpis?.weeksAtRisk ?? null,
-    },
-    {
-      key: 'dry_quarter',
-      label: SCENARIO_LABELS.dry_quarter,
-      netCash: drySc?.kpis?.netCashFlow ?? null,
-      minLiquidity: drySc?.kpis?.minClosingCash ?? null,
-      weeksAtRisk: drySc?.kpis?.weeksAtRisk ?? null,
-    },
-  ];
-
-  // Plain-English board takeaway
-  const boardTakeaway = (() => {
-    if (!baseSc || !wetSc) return 'Scenario data loading…';
-    const baseRisk = baseSc.kpis.weeksAtRisk ?? 0;
-    const wetRisk = wetSc.kpis.weeksAtRisk ?? 0;
-    const xStr = deltaWet != null ? eurCompact(deltaWet) : '—';
-    return `A wet quarter pushes ~${xStr} of billing beyond the 13-week window and lifts portfolio weeks-at-risk from ${baseRisk} to ${wetRisk}. A dry quarter has the inverse effect, releasing cash earlier.`;
-  })();
-
   return (
     <div className="space-y-5">
       {/* 1. Header */}
       <div className="flex flex-wrap items-end justify-between gap-2">
         <SectionTitle
-          sub={`${companies?.length ?? '—'} operating companies · ${SCENARIO_LABELS[scenario]} scenario · 13 weeks from ${dateShort(result.weeks[0].weekStart)}`}
+          sub={`${companies?.length ?? '—'} operating companies · ${SCENARIO_LABELS[scenario]} · 13 weeks from ${dateShort(result.weeks[0].weekStart)}`}
         >
           PE Board — Portfolio Cash Outlook
         </SectionTitle>
-        <Pill tone="accent" title={SCENARIO_NOTE[scenario]}>
-          {SCENARIO_NOTE[scenario]}
+        <Pill tone="accent" title="Operating forecast from live Open-Meteo near term plus seasonal climatology beyond the reliable live-weather window.">
+          {k.liveWeatherWeeks} live-weather weeks · then seasonal
         </Pill>
       </div>
 
@@ -180,7 +120,7 @@ export default function BoardPage() {
         <CashflowChart weeks={result.weeks} />
       </Card>
 
-      {/* 4. Two columns: covenant + scenario compare */}
+      {/* 4. Two columns: covenant + weather timing */}
       <div className="grid gap-5 lg:grid-cols-2">
         <Card
           title={`Liquidity vs covenant floor — ${label}`}
@@ -198,14 +138,10 @@ export default function BoardPage() {
           />
         </Card>
         <Card
-          title="Scenario comparison — portfolio liquidity"
-          subtitle="Base vs wet-quarter vs dry-quarter: closing cash timing across the 13-week horizon"
+          title="Weather forecast timing impact"
+          subtitle="Operating forecast impact from live weather and seasonal weather outlook"
         >
-          {sc ? (
-            <ScenarioCompareChart series={scenarioSeries} />
-          ) : (
-            <LoadingBlock label="Computing scenarios…" />
-          )}
+          <WeatherImpactList weeks={result.weeks} />
         </Card>
       </div>
 
@@ -318,83 +254,7 @@ export default function BoardPage() {
         </div>
       </Card>
 
-      {/* 6. Scenario summary for the board */}
-      <Card
-        title="Scenario summary for the board"
-        subtitle="Portfolio-level: net cash, min liquidity, weeks at risk across all three planning scenarios"
-      >
-        <div className="space-y-4">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[440px]">
-              <thead>
-                <tr>
-                  <Th>Scenario</Th>
-                  <Th right>Net cash (13wk)</Th>
-                  <Th right>Min liquidity</Th>
-                  <Th right>Weeks at risk</Th>
-                </tr>
-              </thead>
-              <tbody>
-                {scenarioRows.map((row) => (
-                  <tr
-                    key={row.key}
-                    className={
-                      row.key === scenario ? 'bg-accent-soft/40' : 'hover:bg-panel-sunken'
-                    }
-                  >
-                    <Td>
-                      <span className="font-medium text-ink">{row.label}</span>
-                      {row.key === scenario && (
-                        <span className="ml-1.5 text-2xs text-accent">← active</span>
-                      )}
-                    </Td>
-                    <Td right>
-                      {row.netCash != null ? (
-                        <span
-                          className={
-                            row.netCash < 0 ? 'text-risk-high' : 'text-ink-soft'
-                          }
-                        >
-                          {signedEur(row.netCash)}
-                        </span>
-                      ) : (
-                        <span className="text-ink-faint">—</span>
-                      )}
-                    </Td>
-                    <Td right>
-                      {row.minLiquidity != null ? eurCompact(row.minLiquidity) : '—'}
-                    </Td>
-                    <Td right>
-                      {row.weeksAtRisk != null ? (
-                        <span
-                          className={
-                            row.weeksAtRisk > 4 ? 'text-risk-medium' : 'text-ink-soft'
-                          }
-                        >
-                          {row.weeksAtRisk}/13
-                        </span>
-                      ) : (
-                        <span className="text-ink-faint">—</span>
-                      )}
-                    </Td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {sc ? (
-            <div className="rounded-md bg-panel-sunken p-3 text-sm leading-relaxed text-ink-soft">
-              <span className="mr-1.5 font-semibold text-ink">Board takeaway:</span>
-              {boardTakeaway}
-            </div>
-          ) : (
-            <LoadingBlock label="Computing scenario comparison…" />
-          )}
-        </div>
-      </Card>
-
-      {/* 7. Portfolio weekly detail + TracePanel */}
+      {/* 6. Portfolio weekly detail + TracePanel */}
       <Card
         title="Portfolio weekly detail"
         subtitle="Click any week to trace back to drivers, assumptions, and source transactions"
@@ -402,7 +262,7 @@ export default function BoardPage() {
         <WeekTable weeks={result.weeks} onPick={setWeek} />
       </Card>
 
-      {/* 8. Footnote */}
+      {/* 7. Footnote */}
       <p className="text-2xs text-ink-faint">
         Covenant floors <AssumptionTag /> and opening cash <AssumptionTag /> are
         configurable assumptions — the revenue-only source data contains no bank
@@ -423,6 +283,31 @@ export default function BoardPage() {
         week={week}
         onClose={() => setWeek(null)}
       />
+    </div>
+  );
+}
+
+function WeatherImpactList({ weeks }: { weeks: any[] }) {
+  const rows = weeks.filter((w) => Math.abs(w.weatherAdjustment) >= 1000);
+  const net = weeks.reduce((sum, w) => sum + w.weatherAdjustment, 0);
+  if (!rows.length) {
+    return <p className="text-sm text-ink-muted">No material weather-timing shifts in the current live forecast horizon.</p>;
+  }
+  return (
+    <div className="space-y-3">
+      <div className="rounded-md bg-panel-sunken px-3 py-2 text-sm text-ink-soft">
+        Net in-horizon weather timing impact: <span className={net < 0 ? 'font-semibold text-risk-high' : 'font-semibold text-risk-low'}>{signedEur(net)}</span>
+      </div>
+      <ul className="space-y-1.5">
+        {rows.slice(0, 6).map((w) => (
+          <li key={w.weekStart} className="flex items-center justify-between text-sm">
+            <span className="text-ink-soft">{dateShort(w.weekStart)} · {w.weatherRisk} risk</span>
+            <span className={w.weatherAdjustment < 0 ? 'text-risk-high tnum' : 'text-risk-low tnum'}>
+              {signedEur(w.weatherAdjustment)}
+            </span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

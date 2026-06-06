@@ -114,7 +114,7 @@ export default function ProjectPage() {
       {/* ── 1. Header ────────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-end justify-between gap-2">
         <SectionTitle
-          sub={`${location} · ${SCENARIO_LABELS[scenario]} scenario · next 13 weeks`}
+          sub={`${location} · ${SCENARIO_LABELS[scenario]} · next 13 weeks`}
         >
           Project Lead — {companyName} weather &amp; schedule
         </SectionTitle>

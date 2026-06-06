@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct CompaniesView: View {
-    @State private var scenario: Scenario = .base
+    private let scenario: Scenario = .base
     @State private var companies: [Company] = []
     /// Cached per-company weeks for the current scenario, keyed by company id.
     @State private var weeksByCompany: [Int: [ForecastWeek]] = [:]
@@ -22,19 +22,11 @@ struct CompaniesView: View {
             }
             .navigationTitle("Companies")
         }
-        .task(id: scenario) { await load() }
+        .task { await load() }
     }
 
     private var content: some View {
         List {
-            Section {
-                Picker("Scenario", selection: $scenario) {
-                    ForEach(Scenario.allCases) { Text($0.label).tag($0) }
-                }
-                .pickerStyle(.segmented)
-                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
-            }
-
             Section("Operating companies") {
                 ForEach(companies) { company in
                     NavigationLink {
@@ -130,7 +122,7 @@ struct CompanyDetailView: View {
                 ErrorState(message: error) { Task { await load(force: true) } }
             } else {
                 Section {
-                    LabeledContent("Scenario", value: scenario.label)
+                    LabeledContent("Forecast", value: "Live weather")
                     LabeledContent("13-week net") {
                         Text(Format.signedEur(kpis.netCash))
                             .foregroundStyle(kpis.netCash < 0 ? .red : .green)

@@ -460,7 +460,7 @@ def build_inventory(conn) -> dict:
             "Bank/cash balances — not present; opening cash is an assumption.",
             "Covenant terms — not supplied; configurable assumptions used.",
             "Project / WIP detail — not present at line level; project view derives from transaction + weather patterns.",
-            "Company location for non-Ummels opcos — inferred (South Limburg / Maastricht proxy).",
+            "Project-level locations — not present; Opco A uses the user-provided dataset 1 Andijk proxy, dataset 2 companies use the Winschoten proxy.",
         ],
         "reconciliation": recon,
     }

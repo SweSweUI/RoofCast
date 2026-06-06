@@ -26,12 +26,17 @@ PRIOR_WORK = Path(
 
 # --- weather proxy locations ------------------------------------------------
 # Peter Ummels is publicly located at Boschstraat 28C, 6442 PB Brunssum, so
-# Brunssum is the weather proxy. Maastricht is a second South-Limburg proxy.
+# Brunssum is the weather proxy. The anonymised hackathon datasets have
+# user-provided weather proxy towns: dataset 1 -> Andijk, dataset 2 -> Winschoten.
 WEATHER_LOCATIONS = [
     {"code": "brunssum", "name": "Brunssum (NL)", "latitude": 50.9472, "longitude": 5.9714,
      "notes": "Peter Ummels HQ proxy (Boschstraat 28C, 6442 PB Brunssum)."},
     {"code": "maastricht", "name": "Maastricht (NL)", "latitude": 50.8514, "longitude": 5.6910,
-     "notes": "Second South-Limburg proxy; used for companies with unknown location."},
+     "notes": "Fallback South-Limburg proxy for companies with unknown location."},
+    {"code": "andijk", "name": "Andijk (NL)", "latitude": 52.7456, "longitude": 5.2214,
+     "notes": "User-provided weather proxy for Altis dataset 1."},
+    {"code": "winschoten", "name": "Winschoten (NL)", "latitude": 53.1442, "longitude": 7.0347,
+     "notes": "User-provided weather proxy for Altis dataset 2."},
 ]
 
 # --- operating companies ----------------------------------------------------
@@ -55,39 +60,39 @@ COMPANIES = [
         "code": "opco-a",
         "name": "Opco A (GL 8000-series)",
         "short_name": "Opco A",
-        "location_name": "South Limburg, NL (assumed)",
-        "weather_code": "maastricht",
+        "location_name": "Andijk, NL (dataset 1 proxy)",
+        "weather_code": "andijk",
         "source_system": "Exact-style general-ledger export",
         "source_confidence": "medium",
-        "is_assumption": 0,
+        "is_assumption": 1,
         "notes": "Anonymised GL exports (accounts 8000/8001/8002). Company identity "
-                 "not in files; location assumed South Limburg -> Maastricht proxy.",
+                 "not in files; user-provided dataset 1 proxy location -> Andijk.",
         "source_glob": "portfolio company data/*.xlsx",
     },
     {
         "code": "opco-gilde",
         "name": "Opco C (Gilde)",
         "short_name": "Opco C",
-        "location_name": "NL (assumed South Limburg)",
-        "weather_code": "maastricht",
+        "location_name": "Winschoten, NL (dataset 2 proxy)",
+        "weather_code": "winschoten",
         "source_system": "Gilde (Verkoopboek Gilde)",
         "source_confidence": "medium",
-        "is_assumption": 0,
+        "is_assumption": 1,
         "notes": "From 'Altis dataset 2' yearly transaction sheets; journals include "
-                 "'Verkoopboek Gilde'. Location assumed -> Maastricht proxy.",
+                 "'Verkoopboek Gilde'. User-provided dataset 2 proxy location -> Winschoten.",
         "source_glob": None,  # handled explicitly from datasets/Altis dataset 2.xlsx
     },
     {
         "code": "opco-e",
         "name": "Company E",
         "short_name": "Company E",
-        "location_name": "NL (assumed South Limburg)",
-        "weather_code": "maastricht",
+        "location_name": "Winschoten, NL (dataset 2 proxy)",
+        "weather_code": "winschoten",
         "source_system": "Invoice register",
         "source_confidence": "low",
-        "is_assumption": 0,
+        "is_assumption": 1,
         "notes": "From 'Company E 2026' invoice sheet in 'Altis dataset 2'. Partial "
-                 "(2026 only). Location assumed -> Maastricht proxy.",
+                 "(2026 only). User-provided dataset 2 proxy location -> Winschoten.",
         "source_glob": None,
     },
 ]

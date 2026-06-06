@@ -13,11 +13,11 @@ export const ROLE_LABEL: Record<Role, string> = {
 
 // Which top-level dashboard segments each role may access.
 export const ACCESS: Record<Role, string[]> = {
-  admin: ['cfo', 'board', 'opco', 'project', 'data-quality', 'methodology', 'admin'],
-  cfo: ['cfo', 'board', 'opco', 'project', 'data-quality', 'methodology'],
-  board: ['board', 'methodology'],
-  opco: ['opco', 'project', 'methodology'],
-  project: ['project', 'methodology'],
+  admin: ['cfo', 'board', 'map', 'agent', 'connectors', 'opco', 'project', 'data-quality', 'methodology', 'admin'],
+  cfo: ['cfo', 'board', 'map', 'agent', 'connectors', 'opco', 'project', 'data-quality', 'methodology'],
+  board: ['board', 'map', 'agent', 'connectors', 'methodology'],
+  opco: ['map', 'agent', 'connectors', 'opco', 'project', 'methodology'],
+  project: ['map', 'agent', 'connectors', 'project', 'methodology'],
 };
 
 export const DEFAULT_ROUTE: Record<Role, string> = {

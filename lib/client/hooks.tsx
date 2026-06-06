@@ -2,7 +2,6 @@
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Scenario } from '@/lib/types';
-import { SCENARIOS } from '@/lib/types';
 
 export interface DashboardState {
   scenario: Scenario;
@@ -18,8 +17,7 @@ export function useDashboardState(): DashboardState {
   const router = useRouter();
   const pathname = usePathname();
 
-  const scenarioRaw = sp.get('scenario') as Scenario | null;
-  const scenario: Scenario = scenarioRaw && SCENARIOS.includes(scenarioRaw) ? scenarioRaw : 'base';
+  const scenario: Scenario = 'base';
   const company = sp.get('company') ?? 'portfolio';
 
   const setParam = useCallback(
@@ -35,7 +33,7 @@ export function useDashboardState(): DashboardState {
   return {
     scenario,
     company,
-    setScenario: (s) => setParam('scenario', s),
+    setScenario: () => setParam('scenario', 'base'),
     setCompany: (c) => setParam('company', c),
     setParam,
     qs,

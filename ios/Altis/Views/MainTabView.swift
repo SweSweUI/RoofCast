@@ -9,6 +9,9 @@ struct MainTabView: View {
             CompaniesView()
                 .tabItem { Label("Companies", systemImage: "building.2") }
 
+            MapView()
+                .tabItem { Label("Map", systemImage: "map") }
+
             WeatherView()
                 .tabItem { Label("Weather", systemImage: "cloud.sun.rain") }
 

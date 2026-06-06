@@ -130,8 +130,8 @@ function ModelLayerList() {
     },
     {
       num: 5,
-      title: 'Scenarios',
-      body: 'Base, wet-quarter and dry-quarter scenarios change the fraction of seasonal weeks that are treated as rain-affected. This shifts the timing of cash-in but does not alter total projected work.',
+      title: 'Forecast basis',
+      body: 'The operating view uses live Open-Meteo weather for the near term, then ISO-week seasonal climatology beyond the reliable forecast window. Internal stress-test variants may be retained for audit/testing, but they are not a CFO selection step.',
     },
     {
       num: 6,

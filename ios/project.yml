@@ -36,6 +36,7 @@ targets:
         TARGETED_DEVICE_FAMILY: "1"
         SWIFT_VERSION: "5.0"
         ENABLE_USER_SCRIPT_SANDBOXING: YES
-        DEVELOPMENT_TEAM: ""
-        CODE_SIGNING_REQUIRED: NO
-        CODE_SIGN_IDENTITY: ""
+        # Distribution signing for TestFlight / App Store. Automatic signing lets
+        # Xcode create & manage the App Store provisioning profile for the bundle id.
+        DEVELOPMENT_TEAM: LX3LCX8P54
+        CODE_SIGN_STYLE: Automatic

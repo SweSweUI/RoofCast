@@ -59,8 +59,8 @@ from config import DB_PATH, ARTIFACTS_DIR  # noqa: E402
 # Companies of interest (code -> display label)
 FOCUS_COMPANIES: dict[str, str] = {
     "ummels":     "Peter Ummels (Brunssum)",
-    "opco-a":     "Opco A (Maastricht)",
-    "opco-gilde": "Opco C / Gilde (Maastricht)",
+    "opco-a":     "Opco A (Andijk)",
+    "opco-gilde": "Opco C / Gilde (Winschoten)",
 }
 
 LAGS           = list(range(9))          # 0..8

@@ -276,7 +276,7 @@ export default function OpcoPage() {
       <p className="text-2xs text-ink-faint">
         WIP exposure, cash-out drivers and covenant floors are configurable assumptions (revenue-only
         source data). Covenant headroom derived from closing cash vs floor. See{' '}
-        <a className="text-accent underline" href={`/methodology?scenario=${scenario}&company=${code}`}>
+        <a className="text-accent underline" href={`/methodology?company=${code}`}>
           Methodology
         </a>{' '}
         and{' '}

@@ -3,9 +3,9 @@
 export type Scenario = 'base' | 'wet_quarter' | 'dry_quarter';
 export const SCENARIOS: Scenario[] = ['base', 'wet_quarter', 'dry_quarter'];
 export const SCENARIO_LABELS: Record<Scenario, string> = {
-  base: 'Base',
-  wet_quarter: 'Wet quarter',
-  dry_quarter: 'Dry quarter',
+  base: 'Live forecast',
+  wet_quarter: 'Wet sensitivity',
+  dry_quarter: 'Dry sensitivity',
 };
 
 export type RiskLevel = 'low' | 'medium' | 'high';
@@ -177,4 +177,50 @@ export interface ForecastResult {
   kpis: ForecastKpis;
   covenants: Covenant[];
   params: ForecastParams;
+}
+
+export interface MapCompanyMarker {
+  id: number;
+  code: string;
+  name: string;
+  shortName: string;
+  sourceSystem: string | null;
+  sourceConfidence: string | null;
+  locationName: string | null;
+  latitude: number;
+  longitude: number;
+  weatherLocationId: number | null;
+  isAssumption: boolean;
+  locationNote: string | null;
+  riskLevel: RiskLevel;
+  weatherRisk: RiskLevel;
+  cashRisk: RiskLevel;
+  currentWeekRisk: RiskLevel;
+  currentWeekRainWorkdays: number;
+  liveWeatherWeeks: number;
+  mediumRiskWeeks: number;
+  highRiskWeeks: number;
+  nextRiskWeek: string | null;
+  weatherSource: string;
+  estimatedWeatherCashImpact: number;
+  deferredCashImpact: number;
+  worstWeeklyWeatherImpact: number;
+  minClosingCash: number;
+  weeksAtRisk: number;
+}
+
+export interface MapResponse {
+  scenario: Scenario;
+  startWeek: string | null;
+  generatedAt: string;
+  markers: MapCompanyMarker[];
+  portfolio: {
+    riskLevel: RiskLevel;
+    companies: number;
+    companiesWithProxyLocations: number;
+    highRiskMarkers: number;
+    mediumRiskMarkers: number;
+    estimatedWeatherCashImpact: number;
+    deferredCashImpact: number;
+  };
 }

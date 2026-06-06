@@ -27,7 +27,7 @@ Altis Cashflow gives portfolio operations teams a 13-week cash forecast that adj
 Altis Cashflow is an internal portfolio analytics platform for PE-backed roofing businesses. It reconciles accounting exports from multiple operating companies into a single cashflow model, layers in a weather-delay signal derived from Open-Meteo historical and live forecast data, and presents the results as role-specific dashboards — CFO, PE Board, Opco MD, and Project Lead.
 
 Key capabilities:
-- 13-week rolling cashflow forecast with three scenarios (base / wet quarter / dry quarter)
+- 13-week rolling cashflow forecast driven by live weather data and seasonal climatology
 - Weather delay signal that shifts the timing of projected billing based on historical rain patterns
 - Portfolio-level covenant headroom and liquidity-at-risk indicators
 - Role-based access: each login is scoped to CFO, Board, Opco MD, Project Lead, or Admin
