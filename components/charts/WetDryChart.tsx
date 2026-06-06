@@ -4,13 +4,13 @@ import {
   BarChart,
   CartesianGrid,
   Legend,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts';
 import { eurCompact } from '@/lib/format';
-import { CHART, ChartTooltip, axisTick, eurAxis } from './common';
+import type { CsvRow } from '@/lib/csv';
+import { CHART, ChartFrame, ChartTooltip, axisTick, eurAxis } from './common';
 
 export interface WetDryPoint {
   lag: number;
@@ -28,7 +28,12 @@ export function WetDryChart({ data }: { data: WetDryPoint[] }) {
     'After wet weeks': Math.round(d.wet_mean),
   }));
   return (
-    <ResponsiveContainer width="100%" height={260}>
+    <ChartFrame
+      name="wet-dry-revenue"
+      height={260}
+      rows={data as unknown as CsvRow[]}
+      columns={['lag', 'wet_mean', 'dry_mean', 'pct_diff', 'p_value']}
+    >
       <BarChart data={rows} margin={{ top: 8, right: 8, left: 0, bottom: 4 }}>
         <CartesianGrid stroke={CHART.grid} vertical={false} />
         <XAxis dataKey="lag" tick={axisTick} tickLine={false} axisLine={{ stroke: CHART.grid }} />
@@ -38,6 +43,6 @@ export function WetDryChart({ data }: { data: WetDryPoint[] }) {
         <Bar dataKey="After dry weeks" fill={CHART.scenario.dry_quarter} radius={[2, 2, 0, 0]} maxBarSize={34} />
         <Bar dataKey="After wet weeks" fill={CHART.scenario.wet_quarter} radius={[2, 2, 0, 0]} maxBarSize={34} />
       </BarChart>
-    </ResponsiveContainer>
+    </ChartFrame>
   );
 }

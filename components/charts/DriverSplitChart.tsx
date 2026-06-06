@@ -5,14 +5,13 @@ import {
   ComposedChart,
   Legend,
   Line,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts';
 import type { ForecastWeek } from '@/lib/types';
 import { weekShort } from '@/lib/format';
-import { CHART, ChartTooltip, axisTick, eurAxis } from './common';
+import { CHART, ChartFrame, ChartTooltip, axisTick, eurAxis } from './common';
 
 /** Stacked cash-out drivers per week + cash-in line for context. */
 export function DriverSplitChart({ weeks }: { weeks: ForecastWeek[] }) {
@@ -25,7 +24,12 @@ export function DriverSplitChart({ weeks }: { weeks: ForecastWeek[] }) {
     'Cash-in': w.forecastCashIn,
   }));
   return (
-    <ResponsiveContainer width="100%" height={300}>
+    <ChartFrame
+      name="cash-out-drivers"
+      height={300}
+      rows={data}
+      columns={['week', 'Materials', 'Subcontractor', 'Labour', 'Overhead', 'Cash-in']}
+    >
       <ComposedChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
         <CartesianGrid stroke={CHART.grid} vertical={false} />
         <XAxis dataKey="week" tick={axisTick} tickLine={false} axisLine={{ stroke: CHART.grid }} interval={0} angle={-30} textAnchor="end" height={42} />
@@ -38,6 +42,6 @@ export function DriverSplitChart({ weeks }: { weeks: ForecastWeek[] }) {
         <Bar dataKey="Overhead" stackId="out" fill={CHART.overhead} radius={[2, 2, 0, 0]} maxBarSize={22} />
         <Line type="monotone" dataKey="Cash-in" stroke={CHART.cashin} strokeWidth={2} dot={false} />
       </ComposedChart>
-    </ResponsiveContainer>
+    </ChartFrame>
   );
 }

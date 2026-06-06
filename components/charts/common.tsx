@@ -1,6 +1,10 @@
 'use client';
-import type { ReactNode } from 'react';
+import type { ReactElement, ReactNode } from 'react';
+import { usePathname, useSearchParams } from 'next/navigation';
+import { ResponsiveContainer } from 'recharts';
 import { eurCompact } from '@/lib/format';
+import { ExportCsvButton } from '@/components/ui/export-csv-button';
+import type { CsvRow } from '@/lib/csv';
 
 export const CHART = {
   cashin: '#0d9488', // teal-600
@@ -39,3 +43,43 @@ export function ChartTooltip({ active, payload, label, currency = true }: any): 
 
 export const axisTick = { fill: CHART.axis, fontSize: 10 };
 export const eurAxis = (v: number) => eurCompact(v);
+
+/**
+ * Wraps a Recharts chart in a responsive container and overlays an
+ * "Export CSV" button in the top-right corner. The download filename is
+ * derived from the chart `name` plus the active view and selected company
+ * (read from the URL), e.g. `cashflow_cfo_ummels.csv`.
+ */
+export function ChartFrame({
+  name,
+  height,
+  rows,
+  columns,
+  children,
+}: {
+  name: string;
+  height: number;
+  rows: CsvRow[];
+  columns?: string[];
+  children: ReactElement;
+}) {
+  const sp = useSearchParams();
+  const pathname = usePathname();
+  const company = sp.get('company') ?? 'portfolio';
+  const view = pathname?.split('/').filter(Boolean)[0] ?? 'dashboard';
+  const filename = `${name}_${view}_${company}`;
+
+  return (
+    <div className="relative">
+      <ExportCsvButton
+        rows={rows}
+        filename={filename}
+        columns={columns}
+        className="absolute right-0 top-0 z-10"
+      />
+      <ResponsiveContainer width="100%" height={height}>
+        {children}
+      </ResponsiveContainer>
+    </div>
+  );
+}

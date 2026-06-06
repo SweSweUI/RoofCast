@@ -4,13 +4,12 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts';
 import { eurCompact } from '@/lib/format';
-import { CHART, ChartTooltip, axisTick, eurAxis } from './common';
+import { CHART, ChartFrame, ChartTooltip, axisTick, eurAxis } from './common';
 
 export interface CompanyBar {
   name: string;
@@ -20,8 +19,14 @@ export interface CompanyBar {
 
 /** Horizontal company comparison (e.g. net cash, min closing). */
 export function CompanyCompareChart({ rows, label = 'Net cash' }: { rows: CompanyBar[]; label?: string }) {
+  const exportRows = rows.map((r) => ({ company: r.name, [label]: r.value, risk: r.risk ?? '' }));
   return (
-    <ResponsiveContainer width="100%" height={Math.max(160, rows.length * 46)}>
+    <ChartFrame
+      name="company-comparison"
+      height={Math.max(160, rows.length * 46)}
+      rows={exportRows}
+      columns={['company', label, 'risk']}
+    >
       <BarChart data={rows} layout="vertical" margin={{ top: 4, right: 16, left: 8, bottom: 4 }}>
         <CartesianGrid stroke={CHART.grid} horizontal={false} />
         <XAxis type="number" tickFormatter={eurAxis} tick={axisTick} tickLine={false} axisLine={false} />
@@ -33,6 +38,6 @@ export function CompanyCompareChart({ rows, label = 'Net cash' }: { rows: Compan
           ))}
         </Bar>
       </BarChart>
-    </ResponsiveContainer>
+    </ChartFrame>
   );
 }

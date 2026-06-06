@@ -8,7 +8,6 @@ import {
   Legend,
   Line,
   ReferenceArea,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
@@ -16,7 +15,7 @@ import {
 import clsx from 'clsx';
 import type { ForecastWeek } from '@/lib/types';
 import { weekShort } from '@/lib/format';
-import { CHART, ChartTooltip, axisTick, eurAxis } from './common';
+import { CHART, ChartFrame, ChartTooltip, axisTick, eurAxis } from './common';
 
 export function CashflowChart({ weeks }: { weeks: ForecastWeek[] }) {
   const data = weeks.map((w) => ({
@@ -66,7 +65,13 @@ export function CashflowChart({ weeks }: { weeks: ForecastWeek[] }) {
         ))}
         <span className="ml-1 text-2xs text-ink-faint">or drag the slider below</span>
       </div>
-      <ResponsiveContainer width="100%" height={320}>
+      {/* ChartFrame adds the Export CSV button (top-right) around the chart. */}
+      <ChartFrame
+        name="cashflow"
+        height={320}
+        rows={data}
+        columns={['week', 'Cash-in', 'Cash-out', 'Closing cash', 'live']}
+      >
         <ComposedChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
           <CartesianGrid stroke={CHART.grid} vertical={false} />
           {liveCount > 0 && start < liveCount && (
@@ -100,7 +105,7 @@ export function CashflowChart({ weeks }: { weeks: ForecastWeek[] }) {
             }}
           />
         </ComposedChart>
-      </ResponsiveContainer>
+      </ChartFrame>
     </div>
   );
 }

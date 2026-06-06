@@ -6,14 +6,13 @@ import {
   Legend,
   Line,
   ReferenceLine,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts';
 import type { ForecastWeek } from '@/lib/types';
 import { weekShort } from '@/lib/format';
-import { CHART, ChartTooltip, axisTick, eurAxis } from './common';
+import { CHART, ChartFrame, ChartTooltip, axisTick, eurAxis } from './common';
 
 /** Closing cash vs covenant floor; headroom shaded. */
 export function CovenantChart({
@@ -31,7 +30,12 @@ export function CovenantChart({
     Headroom: w.covenantHeadroom ?? undefined,
   }));
   return (
-    <ResponsiveContainer width="100%" height={280}>
+    <ChartFrame
+      name="covenant-headroom"
+      height={280}
+      rows={data}
+      columns={['week', 'Closing cash', 'Headroom']}
+    >
       <ComposedChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
         <CartesianGrid stroke={CHART.grid} vertical={false} />
         <XAxis dataKey="week" tick={axisTick} tickLine={false} axisLine={{ stroke: CHART.grid }} interval={0} angle={-30} textAnchor="end" height={42} />
@@ -48,6 +52,6 @@ export function CovenantChart({
         )}
         <Area type="monotone" dataKey="Closing cash" stroke={CHART.closing} strokeWidth={2} fill={CHART.cashin} fillOpacity={0.08} />
       </ComposedChart>
-    </ResponsiveContainer>
+    </ChartFrame>
   );
 }
