@@ -163,7 +163,10 @@ struct ForecastWeek: Decodable, Identifiable, Sendable {
 struct WeatherWeek: Decodable, Identifiable, Sendable {
     let locationId: Int
     let weekStart: String
+    let rainSum: Double?
+    let workdayRainSum: Double?
     let rainDays2mm: Int
+    let rainDays5mm: Int?
     let badWorkdays: Int
     let delayScore: Double
     let isForecast: Int
@@ -171,7 +174,10 @@ struct WeatherWeek: Decodable, Identifiable, Sendable {
     enum CodingKeys: String, CodingKey {
         case locationId = "location_id"
         case weekStart = "week_start"
+        case rainSum = "rain_sum"
+        case workdayRainSum = "workday_rain_sum"
         case rainDays2mm = "rain_days_2mm"
+        case rainDays5mm = "rain_days_5mm"
         case badWorkdays = "bad_workdays"
         case delayScore = "delay_score"
         case isForecast = "is_forecast"
@@ -182,12 +188,16 @@ struct WeatherWeek: Decodable, Identifiable, Sendable {
 
     var isForecastFlag: Bool { isForecast != 0 }
 
-    /// Risk derived from rain workdays: >=3 high, ==2 medium, else low.
+    /// Default risk derived from rain workdays: >=3 high, ==2 medium, else low.
+    /// (Equivalent to `WeatherRule.rain2mm`.)
     var risk: RiskLevel {
         if rainDays2mm >= 3 { return .high }
         if rainDays2mm == 2 { return .medium }
         return .low
     }
+
+    /// Risk under a chosen bad-weather rule (from Settings).
+    func risk(rule: WeatherRule) -> RiskLevel { rule.risk(for: self) }
 }
 
 // MARK: - Derived portfolio KPIs

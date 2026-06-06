@@ -15,8 +15,8 @@ struct MainTabView: View {
             WeatherView()
                 .tabItem { Label("Weather", systemImage: "cloud.sun.rain") }
 
-            AboutView()
-                .tabItem { Label("About", systemImage: "info.circle") }
+            SettingsView()
+                .tabItem { Label("Settings", systemImage: "slider.horizontal.3") }
         }
     }
 }

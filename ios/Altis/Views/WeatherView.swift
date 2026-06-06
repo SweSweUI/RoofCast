@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct WeatherView: View {
+    @EnvironmentObject private var settings: ForecastSettings
     @State private var companies: [Company] = []
     @State private var selectedCompanyId: Int?
     @State private var weeks: [WeatherWeek] = []
@@ -46,6 +47,7 @@ struct WeatherView: View {
                     }
                 }
                 .pickerStyle(.menu)
+                LabeledContent("Rule", value: settings.weatherRule.label)
             } footer: {
                 if selectedCompany?.usesProxyLocation == true {
                     Text("This is a dataset-level weather proxy, not a confirmed project coordinate.")
@@ -54,17 +56,17 @@ struct WeatherView: View {
 
             if !forecastWeeks.isEmpty {
                 Section {
-                    ForEach(forecastWeeks) { WeatherRow(week: $0) }
+                    ForEach(forecastWeeks) { WeatherRow(week: $0, rule: settings.weatherRule) }
                 } header: {
                     Text("Forecast · \(locationName)")
                 } footer: {
-                    Text("Risk from rain workdays (≥2 mm): ≥3 high, 2 medium, else low.")
+                    Text(settings.weatherRule.explanation + " Change the rule in Settings.")
                 }
             }
 
             if !historyWeeks.isEmpty {
                 Section("Recent (actuals)") {
-                    ForEach(historyWeeks) { WeatherRow(week: $0) }
+                    ForEach(historyWeeks) { WeatherRow(week: $0, rule: settings.weatherRule) }
                 }
             }
         }
@@ -101,17 +103,21 @@ struct WeatherView: View {
     }
 }
 
-/// One week in the weather risk calendar.
+/// One week in the weather risk calendar, classified by the active rule and
+/// showing rain workdays, rainfall, heavy-rain days and the delay score.
 struct WeatherRow: View {
     let week: WeatherWeek
+    let rule: WeatherRule
+
+    private var risk: RiskLevel { rule.risk(for: week) }
 
     var body: some View {
         HStack(spacing: 12) {
-            RiskDot(risk: week.risk)
-            VStack(alignment: .leading, spacing: 2) {
+            RiskDot(risk: risk)
+            VStack(alignment: .leading, spacing: 3) {
                 Text(Format.weekRange(week.weekStart))
                     .font(.subheadline.weight(.semibold))
-                Text("\(week.rainDays2mm) rain workday\(week.rainDays2mm == 1 ? "" : "s") · \(week.badWorkdays) bad")
+                Text(detailLine)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
@@ -123,8 +129,16 @@ struct WeatherRow: View {
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
             }
-            RiskBadge(risk: week.risk)
+            RiskBadge(risk: risk)
         }
         .padding(.vertical, 2)
+    }
+
+    private var detailLine: String {
+        var parts = ["\(rule.value(for: week)) \(rule.unitLabel)"]
+        if let mm = week.rainSum { parts.append("\(Format.score(mm))mm") }
+        if let heavy = week.rainDays5mm, heavy > 0 { parts.append("\(heavy)× ≥5mm") }
+        parts.append("\(week.badWorkdays) bad")
+        return parts.joined(separator: " · ")
     }
 }

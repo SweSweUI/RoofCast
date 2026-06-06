@@ -1,12 +1,14 @@
 import SwiftUI
 
 struct PortfolioView: View {
+    @EnvironmentObject private var settings: ForecastSettings
     private let scenario: Scenario = .base
     @State private var weeks: [ForecastWeek] = []
     @State private var loading = false
     @State private var error: String?
+    @State private var selectedMetric: PortfolioMetric?
 
-    private var kpis: ForecastKpis { ForecastKpis(weeks: weeks) }
+    private var adjusted: AdjustedForecast { ForecastEngine.adjust(weeks, settings: settings) }
 
     var body: some View {
         NavigationStack {
@@ -31,47 +33,33 @@ struct PortfolioView: View {
     }
 
     private var content: some View {
-        List {
+        let forecast = adjusted
+        return List {
             Section {
-                kpiGrid
+                ForecastKpiGrid(forecast: forecast, floor: settings.warningFloor) { selectedMetric = $0 }
                     .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
                     .listRowBackground(Color.clear)
             } header: {
-                Text("13-week outlook")
+                Text("\(forecast.weeks.count)-week outlook · tap a tile")
+            } footer: {
+                Text(covenantFooter(forecast.kpis))
             }
 
-            WeekListSection(title: "Weeks", weeks: weeks)
+            WeekListSection(title: "Weeks", weeks: forecast.weeks)
         }
         .listStyle(.insetGrouped)
         .refreshable { await load() }
+        .navigationDestination(item: $selectedMetric) { metric in
+            KpiDetailView(metric: metric, forecast: adjusted, title: "Portfolio", floor: settings.warningFloor)
+        }
     }
 
-    private var kpiGrid: some View {
-        let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
-        return LazyVGrid(columns: columns, spacing: 12) {
-            KpiCard(title: "13-week net",
-                    value: Format.eurCompact(kpis.netCash),
-                    systemImage: "arrow.left.arrow.right",
-                    tint: kpis.netCash < 0 ? .red : .green)
-            KpiCard(title: "Min closing",
-                    value: Format.eurCompact(kpis.minClosingCash),
-                    subtitle: kpis.minClosingWeek.isEmpty ? nil : "wk \(Format.weekShort(kpis.minClosingWeek))",
-                    systemImage: "arrow.down.to.line",
-                    tint: kpis.minClosingCash < 0 ? .red : .primary)
-            KpiCard(title: "Cash in",
-                    value: Format.eurCompact(kpis.totalCashIn),
-                    systemImage: "arrow.down.circle",
-                    tint: .green)
-            KpiCard(title: "Cash out",
-                    value: Format.eurCompact(kpis.totalCashOut),
-                    systemImage: "arrow.up.circle",
-                    tint: .secondary)
-            KpiCard(title: "Weeks at risk",
-                    value: "\(kpis.weeksAtRisk)",
-                    subtitle: "of \(weeks.count)",
-                    systemImage: "exclamationmark.triangle",
-                    tint: kpis.weeksAtRisk > 0 ? .orange : .green)
+    private func covenantFooter(_ k: AdjustedKpis) -> String {
+        let floor = Format.eurCompact(settings.warningFloor)
+        if k.covenantBreach {
+            return "Closing cash breaches the \(floor) warning floor — min headroom \(Format.signedEur(k.minHeadroom))."
         }
+        return "Min headroom \(Format.eurCompact(k.minHeadroom)) above the \(floor) floor. Opening cash \(Format.eurCompact(k.openingCash))."
     }
 
     private func load() async {

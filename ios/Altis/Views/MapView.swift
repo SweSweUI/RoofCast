@@ -2,11 +2,13 @@ import MapKit
 import SwiftUI
 
 struct MapView: View {
+    @EnvironmentObject private var settings: ForecastSettings
     private let scenario: Scenario = .base
     @State private var companies: [Company] = []
     @State private var weeksByCompany: [Int: [ForecastWeek]] = [:]
     @State private var weatherByLocation: [Int: [WeatherWeek]] = [:]
     @State private var selectedCompanyId: Int?
+    @State private var weekIndex: Double = 0
     @State private var loading = false
     @State private var error: String?
     @State private var position: MapCameraPosition = .region(
@@ -18,21 +20,22 @@ struct MapView: View {
 
     private var markers: [CompanyMapMarker] {
         companies.compactMap { company in
-            guard let latitude = company.latitude,
-                  let longitude = company.longitude
-            else { return nil }
-            let weeks = weeksByCompany[company.id] ?? []
-            let weather = company.weatherLocationId.flatMap { weatherByLocation[$0] } ?? []
+            guard let latitude = company.latitude, let longitude = company.longitude else { return nil }
+            let adjusted = ForecastEngine.adjust(weeksByCompany[company.id] ?? [], settings: settings)
+            let weather = (company.weatherLocationId.flatMap { weatherByLocation[$0] } ?? [])
+                .filter(\.isForecastFlag)
+                .sorted { $0.weekStart < $1.weekStart }
             return CompanyMapMarker(
                 company: company,
                 coordinate: CLLocationCoordinate2D(latitude: latitude, longitude: longitude),
-                weeks: weeks,
-                weather: Array(weather.prefix(13))
+                weeks: adjusted.weeks,
+                weather: Array(weather.prefix(settings.horizonWeeks)),
+                rule: settings.weatherRule
             )
         }
         .sorted {
-            if $0.combinedRisk.severity != $1.combinedRisk.severity {
-                return $0.combinedRisk.severity > $1.combinedRisk.severity
+            if $0.overallRisk.severity != $1.overallRisk.severity {
+                return $0.overallRisk.severity > $1.overallRisk.severity
             }
             return $0.deferredCashImpact > $1.deferredCashImpact
         }
@@ -41,6 +44,10 @@ struct MapView: View {
     private var selectedMarker: CompanyMapMarker? {
         markers.first { $0.id == selectedCompanyId } ?? markers.first
     }
+
+    /// Number of scrubbable weeks = the selected company's weather timeline.
+    private var timelineCount: Int { max(1, selectedMarker?.weather.count ?? 1) }
+    private var clampedIndex: Int { min(max(0, Int(weekIndex)), timelineCount - 1) }
 
     var body: some View {
         NavigationStack {
@@ -62,62 +69,96 @@ struct MapView: View {
     private var content: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Location weather risk")
-                        .font(.headline)
-                    Text("Markers combine forecast cash risk and local weather-delay risk. Proxy locations are labelled.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
-                    Map(position: $position) {
-                        ForEach(markers) { marker in
-                            Annotation(marker.company.displayName, coordinate: marker.coordinate) {
-                                Button {
-                                    selectedCompanyId = marker.id
-                                } label: {
-                                    MapRiskMarker(marker: marker, selected: marker.id == selectedMarker?.id)
-                                }
-                                .buttonStyle(.plain)
-                                .accessibilityLabel("\(marker.company.displayName), \(marker.combinedRisk.label) risk")
-                            }
-                        }
-                    }
-                    .mapStyle(.standard(elevation: .flat))
-                    .frame(height: 320)
-                    .clipShape(RoundedRectangle(cornerRadius: 14))
-                }
-                .padding(14)
-                .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
-
+                mapCard
+                scrubberCard
                 if let selectedMarker {
-                    MapMarkerDetail(marker: selectedMarker)
-                }
-
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Companies")
-                        .font(.headline)
-                    ForEach(markers) { marker in
-                        Button {
-                            selectedCompanyId = marker.id
-                            position = .region(
-                                MKCoordinateRegion(
-                                    center: marker.coordinate,
-                                    span: MKCoordinateSpan(latitudeDelta: 0.7, longitudeDelta: 0.9)
-                                )
-                            )
-                        } label: {
-                            MapCompanyRow(marker: marker)
-                        }
-                        .buttonStyle(.plain)
+                    WeatherTimeline(marker: selectedMarker, selected: clampedIndex) { idx in
+                        weekIndex = Double(idx)
                     }
+                    MapMarkerDetail(marker: selectedMarker, weekIndex: clampedIndex)
                 }
-                .padding(14)
-                .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+                companiesCard
             }
             .padding()
         }
         .background(Color(.systemGroupedBackground))
         .refreshable { await load(forceCompanies: true) }
+    }
+
+    private var mapCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Location weather risk")
+                .font(.headline)
+            Text("Markers recolor as you scrub the week below. Risk combines local weather (\(settings.weatherRule.label)) and forecast cash risk.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            Map(position: $position) {
+                ForEach(markers) { marker in
+                    Annotation(marker.company.displayName, coordinate: marker.coordinate) {
+                        Button { selectedCompanyId = marker.id } label: {
+                            MapRiskMarker(
+                                marker: marker,
+                                risk: marker.combinedRisk(at: clampedIndex),
+                                selected: marker.id == selectedMarker?.id
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("\(marker.company.displayName), \(marker.combinedRisk(at: clampedIndex).label) risk")
+                    }
+                }
+            }
+            .mapStyle(.standard(elevation: .flat))
+            .frame(height: 320)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+        }
+        .padding(14)
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    private var scrubberCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Label("Week", systemImage: "calendar")
+                    .font(.subheadline.weight(.semibold))
+                Spacer()
+                Text(selectedWeekLabel)
+                    .font(.subheadline.monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
+            if timelineCount > 1 {
+                Slider(value: $weekIndex, in: 0...Double(timelineCount - 1), step: 1)
+            }
+        }
+        .padding(14)
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    private var selectedWeekLabel: String {
+        guard let marker = selectedMarker, marker.weather.indices.contains(clampedIndex) else { return "—" }
+        let wk = marker.weather[clampedIndex]
+        return "Week of \(Format.dateLong(wk.weekStart))"
+    }
+
+    private var companiesCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Companies")
+                .font(.headline)
+            ForEach(markers) { marker in
+                Button {
+                    selectedCompanyId = marker.id
+                    position = .region(MKCoordinateRegion(
+                        center: marker.coordinate,
+                        span: MKCoordinateSpan(latitudeDelta: 0.7, longitudeDelta: 0.9)
+                    ))
+                } label: {
+                    MapCompanyRow(marker: marker, weekIndex: clampedIndex)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(14)
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
     }
 
     private func load(forceCompanies: Bool = false) async {
@@ -138,9 +179,7 @@ struct MapView: View {
                         (company.id, try await service.companyWeeks(companyId: company.id, scenario: scenario))
                     }
                 }
-                for try await (id, weeks) in group {
-                    forecastMap[id] = weeks
-                }
+                for try await (id, weeks) in group { forecastMap[id] = weeks }
             }
             weeksByCompany = forecastMap
 
@@ -148,13 +187,9 @@ struct MapView: View {
             var weatherMap: [Int: [WeatherWeek]] = [:]
             try await withThrowingTaskGroup(of: (Int, [WeatherWeek]).self) { group in
                 for locationId in locationIds {
-                    group.addTask {
-                        (locationId, try await service.weather(locationId: locationId))
-                    }
+                    group.addTask { (locationId, try await service.weather(locationId: locationId)) }
                 }
-                for try await (id, weeks) in group {
-                    weatherMap[id] = weeks
-                }
+                for try await (id, weeks) in group { weatherMap[id] = weeks }
             }
             weatherByLocation = weatherMap
         } catch {
@@ -163,27 +198,51 @@ struct MapView: View {
     }
 }
 
+// MARK: - Marker model
+
 private struct CompanyMapMarker: Identifiable {
     let company: Company
     let coordinate: CLLocationCoordinate2D
-    let weeks: [ForecastWeek]
-    let weather: [WeatherWeek]
+    let weeks: [ForecastWeek]      // settings-adjusted forecast
+    let weather: [WeatherWeek]     // forecast weather, ascending
+    let rule: WeatherRule
 
     var id: Int { company.id }
-    var cashRisk: RiskLevel { weeks.map(\.risk).max(by: { $0.severity < $1.severity }) ?? .low }
-    var weatherRisk: RiskLevel { weather.map(\.risk).max(by: { $0.severity < $1.severity }) ?? .low }
-    var combinedRisk: RiskLevel { cashRisk.severity >= weatherRisk.severity ? cashRisk : weatherRisk }
+
+    func weatherRisk(at index: Int) -> RiskLevel {
+        guard weather.indices.contains(index) else { return .low }
+        return rule.risk(for: weather[index])
+    }
+    func cashRisk(at index: Int) -> RiskLevel {
+        guard weeks.indices.contains(index) else { return .low }
+        return weeks[index].risk
+    }
+    func combinedRisk(at index: Int) -> RiskLevel {
+        let w = weatherRisk(at: index), c = cashRisk(at: index)
+        return w.severity >= c.severity ? w : c
+    }
+    func rainWorkdays(at index: Int) -> Int {
+        weather.indices.contains(index) ? rule.value(for: weather[index]) : 0
+    }
+
+    var overallRisk: RiskLevel {
+        let w = weather.map { rule.risk(for: $0) }.max(by: { $0.severity < $1.severity }) ?? .low
+        let c = weeks.map(\.risk).max(by: { $0.severity < $1.severity }) ?? .low
+        return w.severity >= c.severity ? w : c
+    }
     var deferredCashImpact: Double { weeks.reduce(0) { $0 + max(0, -$1.weatherAdjustment) } }
     var totalWeatherImpact: Double { weeks.reduce(0) { $0 + $1.weatherAdjustment } }
-    var minClosingCash: Double { ForecastKpis(weeks: weeks).minClosingCash }
+    var minClosingCash: Double { weeks.map(\.closingCash).min() ?? 0 }
     var liveWeatherWeeks: Int { weeks.filter(\.isLive).count }
-    var highWeatherWeeks: Int { weather.filter { $0.risk == .high }.count }
-    var mediumWeatherWeeks: Int { weather.filter { $0.risk == .medium }.count }
-    var currentRainWorkdays: Int { weather.first?.rainDays2mm ?? 0 }
+    var highWeatherWeeks: Int { weather.filter { rule.risk(for: $0) == .high }.count }
+    var mediumWeatherWeeks: Int { weather.filter { rule.risk(for: $0) == .medium }.count }
 }
+
+// MARK: - Subviews
 
 private struct MapRiskMarker: View {
     let marker: CompanyMapMarker
+    let risk: RiskLevel
     let selected: Bool
 
     var body: some View {
@@ -191,77 +250,150 @@ private struct MapRiskMarker: View {
             .font(.caption.weight(.bold))
             .foregroundStyle(.white)
             .frame(width: selected ? 38 : 32, height: selected ? 38 : 32)
-            .background(marker.combinedRisk.color, in: Circle())
+            .background(risk.color, in: Circle())
             .overlay(Circle().stroke(.white, lineWidth: 3))
-            .shadow(color: marker.combinedRisk.color.opacity(0.35), radius: 6, x: 0, y: 3)
+            .shadow(color: risk.color.opacity(0.35), radius: 6, x: 0, y: 3)
+    }
+}
+
+/// Horizontally scrollable weather timeline for one company. Tap a cell to scrub.
+private struct WeatherTimeline: View {
+    let marker: CompanyMapMarker
+    let selected: Int
+    let onSelect: (Int) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Weather timeline · \(marker.company.displayName)")
+                .font(.subheadline.weight(.semibold))
+            ScrollViewReader { proxy in
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(Array(marker.weather.enumerated()), id: \.offset) { idx, wk in
+                            cell(idx: idx, week: wk)
+                                .id(idx)
+                                .onTapGesture { onSelect(idx) }
+                        }
+                    }
+                    .padding(.vertical, 2)
+                }
+                .onChange(of: selected) { _, new in
+                    withAnimation { proxy.scrollTo(new, anchor: .center) }
+                }
+            }
+            if marker.weather.isEmpty {
+                Text("No forecast weather for this location.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+        }
+        .padding(14)
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    private func cell(idx: Int, week: WeatherWeek) -> some View {
+        let risk = marker.rule.risk(for: week)
+        let isSel = idx == selected
+        return VStack(spacing: 5) {
+            Text(Format.weekShort(week.weekStart))
+                .font(.caption2.weight(.medium))
+                .foregroundStyle(isSel ? .white : .secondary)
+            Image(systemName: marker.rule.value(for: week) > 0 ? "cloud.rain.fill" : "sun.max.fill")
+                .font(.callout)
+                .foregroundStyle(isSel ? .white : risk.color)
+            Text("\(marker.rule.value(for: week))")
+                .font(.subheadline.weight(.bold).monospacedDigit())
+                .foregroundStyle(isSel ? .white : .primary)
+            Text("delay \(Format.score(week.delayScore))")
+                .font(.system(size: 9))
+                .foregroundStyle(isSel ? Color.white.opacity(0.85) : Color(.tertiaryLabel))
+        }
+        .frame(width: 60)
+        .padding(.vertical, 10)
+        .background(isSel ? risk.color : risk.color.opacity(0.12),
+                    in: RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(risk.color.opacity(isSel ? 0 : 0.4), lineWidth: 1))
     }
 }
 
 private struct MapMarkerDetail: View {
     let marker: CompanyMapMarker
+    let weekIndex: Int
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(marker.company.displayName)
-                        .font(.headline)
+                    Text(marker.company.displayName).font(.headline)
                     Text(marker.company.locationName ?? "No location")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
-                RiskBadge(risk: marker.combinedRisk)
+                RiskBadge(risk: marker.combinedRisk(at: weekIndex))
+            }
+
+            if marker.weather.indices.contains(weekIndex) {
+                let wk = marker.weather[weekIndex]
+                HStack(spacing: 10) {
+                    weatherStat(systemImage: "cloud.rain", value: "\(marker.rainWorkdays(at: weekIndex))", label: marker.rule.unitLabel)
+                    weatherStat(systemImage: "drop", value: rainMM(wk), label: "rain")
+                    weatherStat(systemImage: "clock.badge.exclamationmark", value: Format.score(wk.delayScore), label: "delay")
+                }
             }
 
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
                 KpiCard(title: "Deferred", value: Format.eurCompact(marker.deferredCashImpact), subtitle: "weather timing", systemImage: "cloud.rain", tint: marker.deferredCashImpact > 0 ? .orange : .green)
                 KpiCard(title: "Weather impact", value: Format.signedEur(marker.totalWeatherImpact), subtitle: "\(marker.liveWeatherWeeks) live weeks", systemImage: "arrow.left.arrow.right", tint: marker.totalWeatherImpact < 0 ? .red : .accentColor)
-                KpiCard(title: "Min closing", value: Format.eurCompact(marker.minClosingCash), subtitle: "13-week low", systemImage: "banknote", tint: marker.minClosingCash < 0 ? .red : .accentColor)
-                KpiCard(title: "Weather risk", value: marker.weatherRisk.label, subtitle: "\(marker.highWeatherWeeks) high, \(marker.mediumWeatherWeeks) medium", systemImage: "thermometer.sun", tint: marker.weatherRisk.color)
+                KpiCard(title: "Min closing", value: Format.eurCompact(marker.minClosingCash), subtitle: "horizon low", systemImage: "banknote", tint: marker.minClosingCash < 0 ? .red : .accentColor)
+                KpiCard(title: "Weather risk", value: marker.overallRisk.label, subtitle: "\(marker.highWeatherWeeks) high, \(marker.mediumWeatherWeeks) medium", systemImage: "thermometer.sun", tint: marker.overallRisk.color)
             }
 
-            VStack(alignment: .leading, spacing: 6) {
-                LabeledContent("Source", value: marker.company.sourceSystem ?? "Unknown")
-                LabeledContent("Rain workdays", value: "\(marker.currentRainWorkdays) current week")
-                LabeledContent("Coordinates", value: String(format: "%.4f, %.4f", marker.coordinate.latitude, marker.coordinate.longitude))
-                if marker.company.usesProxyLocation {
-                    Label("Dataset-level weather proxy, not a project coordinate", systemImage: "mappin.and.ellipse")
-                        .font(.caption)
-                        .foregroundStyle(.orange)
-                }
+            if marker.company.usesProxyLocation {
+                Label("Dataset-level weather proxy, not a project coordinate", systemImage: "mappin.and.ellipse")
+                    .font(.caption).foregroundStyle(.orange)
             }
-            .font(.caption)
         }
         .padding(14)
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    private func rainMM(_ wk: WeatherWeek) -> String {
+        guard let mm = wk.rainSum else { return "–" }
+        return "\(Format.score(mm))mm"
+    }
+
+    private func weatherStat(systemImage: String, value: String, label: String) -> some View {
+        VStack(spacing: 3) {
+            Image(systemName: systemImage).font(.callout).foregroundStyle(.secondary)
+            Text(value).font(.subheadline.weight(.semibold).monospacedDigit())
+            Text(label).font(.caption2).foregroundStyle(.tertiary).lineLimit(1)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+        .background(Color(.tertiarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 10))
     }
 }
 
 private struct MapCompanyRow: View {
     let marker: CompanyMapMarker
+    let weekIndex: Int
 
     var body: some View {
         HStack(spacing: 12) {
-            RiskDot(risk: marker.combinedRisk)
+            RiskDot(risk: marker.combinedRisk(at: weekIndex))
             VStack(alignment: .leading, spacing: 2) {
                 Text(marker.company.displayName)
                     .font(.subheadline.weight(.semibold))
                 Text(marker.company.locationName ?? "No location")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                    .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 2) {
-                Text(Format.eurCompact(marker.deferredCashImpact))
+                Text("\(marker.rainWorkdays(at: weekIndex))")
                     .font(.subheadline.weight(.semibold).monospacedDigit())
-                    .foregroundStyle(marker.deferredCashImpact > 0 ? .orange : .secondary)
-                Text("deferred")
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(marker.combinedRisk(at: weekIndex).color)
+                Text("this wk").font(.caption2).foregroundStyle(.tertiary)
             }
-            RiskBadge(risk: marker.combinedRisk, compact: true)
+            RiskBadge(risk: marker.combinedRisk(at: weekIndex), compact: true)
         }
         .padding(.vertical, 8)
     }

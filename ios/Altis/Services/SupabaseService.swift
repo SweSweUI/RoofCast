@@ -91,7 +91,7 @@ struct SupabaseService {
     func weather(locationId: Int) async throws -> [WeatherWeek] {
         try await client
             .from("altis_weather_weekly")
-            .select("location_id,week_start,rain_days_2mm,bad_workdays,delay_score,is_forecast")
+            .select("location_id,week_start,rain_sum,workday_rain_sum,rain_days_2mm,rain_days_5mm,bad_workdays,delay_score,is_forecast")
             .eq("location_id", value: locationId)
             .order("is_forecast", ascending: false)
             .order("week_start")

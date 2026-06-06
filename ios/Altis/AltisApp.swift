@@ -3,11 +3,13 @@ import SwiftUI
 @main
 struct AltisApp: App {
     @StateObject private var appState = AppState()
+    @StateObject private var settings = ForecastSettings()
 
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environmentObject(appState)
+                .environmentObject(settings)
                 .task { await appState.bootstrap() }
         }
     }
