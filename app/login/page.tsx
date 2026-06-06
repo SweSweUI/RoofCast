@@ -11,6 +11,9 @@ const DEMO: { email: string; role: Role }[] = [
   { email: 'admin@altis.demo', role: 'admin' },
 ];
 const DEMO_PASSWORD = 'AltisDemo!2026';
+const SUPABASE_AUTH_ENABLED = Boolean(
+  process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+);
 
 export default function LoginPage() {
   const [email, setEmail] = useState('cfo@altis.demo');
@@ -22,18 +25,31 @@ export default function LoginPage() {
     e?.preventDefault();
     setBusy(true);
     setError(null);
-    const supabase = createSupabaseBrowser();
-    const { data, error } = await supabase.auth.signInWithPassword(
-      creds ?? { email, password },
-    );
-    if (error) {
-      setError(error.message);
+
+    if (!SUPABASE_AUTH_ENABLED) {
+      const demo = DEMO.find((d) => d.email === (creds?.email ?? email));
+      window.location.assign(defaultRouteFor(demo?.role ?? 'cfo'));
+      return;
+    }
+
+    try {
+      const supabase = createSupabaseBrowser();
+      const { data, error } = await supabase.auth.signInWithPassword(
+        creds ?? { email, password },
+      );
+      if (error) {
+        setError(error.message);
+        setBusy(false);
+        return;
+      }
+      const role = (data.user?.user_metadata?.role as string) ?? 'project';
+      // full navigation so the freshly-set session cookie reaches the middleware
+      window.location.assign(defaultRouteFor(role));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
       setBusy(false);
       return;
     }
-    const role = (data.user?.user_metadata?.role as string) ?? 'project';
-    // full navigation so the freshly-set session cookie reaches the middleware
-    window.location.assign(defaultRouteFor(role));
   }
 
   return (
@@ -49,7 +65,15 @@ export default function LoginPage() {
 
         <div className="rounded-lg border border-panel-line bg-panel p-5 shadow-card">
           <h1 className="text-sm font-semibold text-ink">Sign in</h1>
-          <p className="mt-0.5 text-2xs text-ink-muted">Role-based access · Supabase Auth</p>
+          <p className="mt-0.5 text-2xs text-ink-muted">
+            {SUPABASE_AUTH_ENABLED ? 'Role-based access · Supabase Auth' : 'Local demo mode · no sign-in required'}
+          </p>
+
+          {!SUPABASE_AUTH_ENABLED && (
+            <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-2xs text-amber-800">
+              Supabase auth is disabled for this local server. Use a role button below to open the dashboard.
+            </div>
+          )}
 
           <form onSubmit={signIn} className="mt-4 space-y-3">
             <label className="block">
@@ -71,12 +95,14 @@ export default function LoginPage() {
               type="submit" disabled={busy}
               className="w-full rounded-md bg-ink py-2 text-sm font-medium text-white hover:bg-ink-soft disabled:opacity-50"
             >
-              {busy ? 'Signing in…' : 'Sign in'}
+              {busy ? 'Opening…' : SUPABASE_AUTH_ENABLED ? 'Sign in' : 'Open dashboard'}
             </button>
           </form>
 
           <div className="mt-4 border-t border-panel-line pt-3">
-            <p className="mb-2 text-2xs text-ink-faint">Demo accounts (password <code>{DEMO_PASSWORD}</code>):</p>
+            <p className="mb-2 text-2xs text-ink-faint">
+              {SUPABASE_AUTH_ENABLED ? <>Demo accounts (password <code>{DEMO_PASSWORD}</code>):</> : 'Open as role:'}
+            </p>
             <div className="flex flex-wrap gap-1.5">
               {DEMO.map((d) => (
                 <button

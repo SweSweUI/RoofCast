@@ -36,14 +36,16 @@ export function TracePanel({
   scenario,
   week,
   onClose,
+  extra = '',
 }: {
   company: string;
   scenario: Scenario;
   week: string | null;
   onClose: () => void;
+  extra?: string;
 }) {
   const url = week
-    ? `/api/trace?company=${encodeURIComponent(company)}&scenario=${scenario}&week=${week}`
+    ? `/api/trace?company=${encodeURIComponent(company)}&scenario=${scenario}&week=${week}${extra}`
     : null;
   const { data, loading } = useApi<TraceResponse>(url);
   if (!week) return null;

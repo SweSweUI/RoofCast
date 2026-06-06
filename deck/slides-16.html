@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Altis — Weather-Aware Cashflow Platform</title>
+<style>
+/* ============================================================
+   Altis deck — calm operational palette (slate + teal),
+   matched to the app's tailwind.config.ts. No clutter, smooth motion.
+   ============================================================ */
+:root{
+  --ink:#0f172a; --ink-soft:#1e293b; --ink-muted:#475569; --ink-faint:#94a3b8;
+  --panel:#ffffff; --sunken:#f8fafc; --line:#e2e8f0;
+  --accent:#0d9488; --accent-soft:#ccfbf1; --accent-deep:#0f766e;
+  --low:#15803d; --medium:#b45309; --high:#b91c1c;
+  --low-bg:#dcfce7; --medium-bg:#fef3c7; --high-bg:#fee2e2;
+  --cashin:#0d9488; --cashout:#64748b;
+  --shadow:0 1px 2px rgb(15 23 42/.04),0 10px 30px rgb(15 23 42/.08);
+  --shadow-lg:0 30px 80px rgb(15 23 42/.18);
+  --r:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:#0b1220; color:var(--ink);
+  font-feature-settings:'tnum' 1,'cv05' 1; overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+.tnum{font-variant-numeric:tabular-nums}
+
+/* ---- deck stage ---- */
+.deck{position:fixed;inset:0;display:grid;place-items:center}
+.slide{
+  position:absolute;inset:0; padding:5.2vh 6vw 7vh;
+  display:flex;flex-direction:column;justify-content:center;
+  background:radial-gradient(120% 120% at 80% -10%,#ffffff 0%,#f8fafc 55%,#eef2f7 100%);
+  opacity:0;visibility:hidden;overflow:hidden;
+}
+/* Background swaps instantly (no slide-level fade) so two contentful slides never
+   overlap and no flash occurs; ALL motion is carried by the staggered .anim content. */
+.slide.active{opacity:1;visibility:visible;z-index:2}
+
+/* slide chrome */
+.kicker{display:inline-flex;align-items:center;gap:.55rem;font-size:.78rem;font-weight:600;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--accent-deep)}
+.kicker .dot{width:7px;height:7px;border-radius:99px;background:var(--accent);
+  box-shadow:0 0 0 4px var(--accent-soft)}
+h1{font-size:clamp(2rem,5.2vw,4.4rem);line-height:1.02;letter-spacing:-.025em;font-weight:800;color:var(--ink)}
+h2{font-size:clamp(1.6rem,3.6vw,3rem);line-height:1.05;letter-spacing:-.02em;font-weight:800;color:var(--ink)}
+.lead{font-size:clamp(1rem,1.5vw,1.32rem);color:var(--ink-muted);line-height:1.5;max-width:60ch}
+.muted{color:var(--ink-muted)} .faint{color:var(--ink-faint)}
+.accent{color:var(--accent-deep)}
+b,strong{font-weight:700;color:var(--ink)}
+
+/* footer + progress + counter */
+.brandbar{position:fixed;left:0;right:0;bottom:0;height:46px;display:flex;align-items:center;
+  justify-content:space-between;padding:0 22px;z-index:50;pointer-events:none;
+  font-size:.72rem;color:var(--ink-faint)}
+.brandbar .b-left{display:flex;align-items:center;gap:.5rem;font-weight:600;color:var(--ink-muted)}
+.logo-a{width:20px;height:20px;border-radius:5px;background:var(--ink);color:#fff;display:grid;
+  place-items:center;font-weight:800;font-size:.72rem}
+.counter{font-variant-numeric:tabular-nums}
+.progress{position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,var(--accent),#22d3ee);
+  width:0;z-index:60;transition:width .45s ease;box-shadow:0 0 12px rgba(13,148,136,.6)}
+.hint{position:fixed;bottom:11px;left:50%;transform:translateX(-50%);z-index:50;
+  font-size:.68rem;color:var(--ink-faint);display:flex;gap:.5rem;align-items:center;pointer-events:none}
+kbd{font-family:ui-monospace,Menlo,monospace;font-size:.64rem;background:#fff;border:1px solid var(--line);
+  border-bottom-width:2px;border-radius:5px;padding:.05rem .32rem;color:var(--ink-muted)}
+.navbtn{position:fixed;top:50%;transform:translateY(-50%);z-index:55;width:42px;height:42px;border-radius:99px;
+  background:rgba(255,255,255,.8);border:1px solid var(--line);backdrop-filter:blur(6px);
+  display:grid;place-items:center;cursor:pointer;color:var(--ink-muted);box-shadow:var(--shadow);
+  transition:transform .15s ease,color .15s}
+.navbtn:hover{color:var(--accent-deep);transform:translateY(-50%) scale(1.08)}
+.navbtn.l{left:14px}.navbtn.r{right:14px}.navbtn svg{width:18px;height:18px}
+
+/* ---- entrance animation system ---- */
+.anim{opacity:0;transform:translateY(20px);transition:opacity .65s cubic-bezier(.22,.61,.36,1),
+  transform .65s cubic-bezier(.22,.61,.36,1);transition-delay:var(--d,0s)}
+.slide.active .anim{opacity:1;transform:none}
+.anim.fade{transform:none}
+.anim.left{transform:translateX(-26px)}
+.anim.right{transform:translateX(26px)}
+.anim.scale{transform:scale(.92)}
+.slide.active .anim.left,.slide.active .anim.right{transform:none}
+.slide.active .anim.scale{transform:scale(1)}
+
+/* ---- pills / chips ---- */
+.pill{display:inline-flex;align-items:center;gap:.4rem;font-size:.74rem;font-weight:600;
+  padding:.28rem .62rem;border-radius:99px;border:1px solid var(--line);background:#fff;color:var(--ink-soft)}
+.pill.live{color:var(--accent-deep);border-color:#99f6e4;background:var(--accent-soft)}
+.pill.live .dot{width:7px;height:7px;border-radius:99px;background:var(--accent);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(13,148,136,.5)}
+  50%{opacity:.7;box-shadow:0 0 0 6px rgba(13,148,136,0)}}
+.chip{display:inline-flex;align-items:center;gap:.4rem;font-size:.82rem;font-weight:600;
+  padding:.4rem .8rem;border-radius:10px;background:#fff;border:1px solid var(--line);color:var(--ink-soft);
+  box-shadow:var(--shadow)}
+.chip .ico{color:var(--accent-deep)}
+
+/* ---- cards ---- */
+.card{background:#fff;border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:1.1rem 1.2rem}
+.card h3{font-size:1.02rem;font-weight:700;margin-bottom:.25rem}
+.card p{font-size:.86rem;color:var(--ink-muted);line-height:1.45}
+
+.grid{display:grid;gap:1rem}
+.g2{grid-template-columns:repeat(2,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+.row{display:flex;gap:1rem;align-items:center}
+.col{display:flex;flex-direction:column;gap:1rem}
+.spread{display:flex;justify-content:space-between;align-items:flex-end;gap:2rem;flex-wrap:wrap}
+
+/* ---- numbers / stats ---- */
+.statnum{font-size:clamp(2rem,4.4vw,3.4rem);font-weight:800;letter-spacing:-.03em;color:var(--ink);line-height:1}
+.statnum .u{color:var(--accent-deep)}
+.statlbl{font-size:.8rem;color:var(--ink-muted);margin-top:.35rem;line-height:1.3}
+
+/* ---- browser frame for screenshots ---- */
+.frame{border-radius:14px;overflow:hidden;border:1px solid var(--line);background:#fff;box-shadow:var(--shadow-lg);
+  display:flex;flex-direction:column}
+.frame .bar{height:30px;flex:0 0 30px;display:flex;align-items:center;gap:6px;padding:0 12px;background:#f1f5f9;border-bottom:1px solid var(--line)}
+.frame .bar i{width:9px;height:9px;border-radius:99px;background:#cbd5e1;display:block}
+.frame .bar .url{margin-left:10px;font-size:.66rem;color:var(--ink-faint);background:#fff;border:1px solid var(--line);
+  border-radius:6px;padding:.12rem .55rem}
+.shotwrap{position:relative;overflow:hidden}
+.shotwrap img{width:100%;display:block}
+/* windowed viewport into a tall full-page capture — the image pans within a fixed height */
+.shotwrap.win{height:var(--winh,52vh)}
+.shotwrap.win img{position:absolute;top:0;left:0}
+.shotwrap.win.scroll img{animation:scrollshot 16s ease-in-out infinite alternate}
+.slide:not(.active) .shotwrap.scroll img{animation:none}
+@keyframes scrollshot{0%{transform:translateY(0)}100%{transform:translateY(calc(-100% + var(--winh,52vh)))}}
+
+/* ---- weather→cash chain (slide 3) ---- */
+.chain{display:flex;align-items:stretch;gap:0;width:100%;margin-top:1.4rem}
+.node{flex:1;background:#fff;border:1px solid var(--line);border-radius:14px;padding:1.1rem 1rem;text-align:center;
+  position:relative;box-shadow:var(--shadow);transition:transform .5s ease,box-shadow .5s ease,border-color .5s ease}
+.slide.active .node{animation:nodepop .6s both}
+.node .ic{width:42px;height:42px;border-radius:11px;display:grid;place-items:center;margin:0 auto .55rem;
+  background:var(--accent-soft);color:var(--accent-deep)}
+.node h4{font-size:.96rem;font-weight:700}
+.node p{font-size:.74rem;color:var(--ink-muted);margin-top:.2rem;line-height:1.35}
+.connector{flex:0 0 46px;display:grid;place-items:center;color:var(--ink-faint);position:relative}
+.connector svg{width:26px;height:26px}
+.connector::before{content:"";position:absolute;top:50%;left:0;right:0;height:2px;background:var(--line)}
+.connector .spark{position:absolute;top:50%;left:0;width:14px;height:14px;margin-top:-7px;border-radius:99px;
+  background:var(--accent);box-shadow:0 0 14px 3px rgba(13,148,136,.7);opacity:0}
+.slide.active .connector .spark{animation:travel 2.6s linear infinite}
+.slide.active .connector:nth-of-type(2) .spark{animation-delay:.3s}
+.slide.active .connector:nth-of-type(4) .spark{animation-delay:.6s}
+.slide.active .connector:nth-of-type(6) .spark{animation-delay:.9s}
+@keyframes travel{0%{left:-6px;opacity:0}10%{opacity:1}90%{opacity:1}100%{left:42px;opacity:0}}
+@keyframes nodepop{0%{opacity:0;transform:translateY(16px) scale(.96)}100%{opacity:1;transform:none}}
+.node:nth-of-type(1){animation-delay:.1s}.node:nth-of-type(3){animation-delay:.45s}
+.node:nth-of-type(5){animation-delay:.8s}.node:nth-of-type(7){animation-delay:1.15s}
+
+/* ---- stacked model layers (slide 6) ---- */
+.layers{display:flex;flex-direction:column;gap:.6rem;margin-top:.4rem}
+.layer{display:flex;align-items:center;gap:1rem;background:#fff;border:1px solid var(--line);border-left:4px solid var(--accent);
+  border-radius:12px;padding:.7rem 1rem;box-shadow:var(--shadow)}
+.layer .n{flex:0 0 30px;height:30px;border-radius:8px;background:var(--ink);color:#fff;display:grid;place-items:center;
+  font-weight:800;font-size:.86rem}
+.layer .t{font-weight:700;font-size:.96rem}
+.layer .d{font-size:.8rem;color:var(--ink-muted)}
+
+/* ---- scenario bars (slide 7) ---- */
+.scwrap{display:grid;grid-template-columns:repeat(3,1fr);gap:1.4rem;align-items:end;margin-top:1rem}
+.sccol{text-align:center}
+.barbox{height:230px;display:flex;align-items:flex-end;justify-content:center;gap:10px;
+  background:linear-gradient(180deg,#fff,transparent);border-bottom:2px solid var(--line);padding-bottom:0;border-radius:10px 10px 0 0}
+.bar{width:46px;border-radius:7px 7px 0 0;height:0;transition:height 1.1s cubic-bezier(.22,.61,.36,1);transition-delay:var(--bd,.2s)}
+.slide.active .bar{height:var(--h)}
+.bar.cin{background:linear-gradient(180deg,#14b8a6,#0d9488)}
+.bar.cout{background:linear-gradient(180deg,#94a3b8,#64748b)}
+.sccol .label{margin-top:.6rem;font-weight:800;font-size:1rem}
+.sccol .sub{font-size:.76rem;color:var(--ink-muted)}
+.sccol .intensity{font-size:.72rem;font-weight:700;margin-top:.2rem}
+
+/* ---- risk cards (slide 8) ---- */
+.risks{display:grid;grid-template-columns:repeat(4,1fr);gap:.8rem}
+.risk{background:#fff;border:1px solid var(--line);border-radius:12px;padding:.75rem .85rem;box-shadow:var(--shadow);
+  border-top:3px solid var(--line)}
+.risk.low{border-top-color:var(--low)} .risk.med{border-top-color:var(--medium)} .risk.high{border-top-color:var(--high)}
+.risk .lv{font-size:.62rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:.1rem .4rem;border-radius:5px}
+.risk.low .lv{background:var(--low-bg);color:var(--low)}
+.risk.med .lv{background:var(--medium-bg);color:var(--medium)}
+.risk.high .lv{background:var(--high-bg);color:var(--high)}
+.risk h4{font-size:.85rem;font-weight:700;margin:.4rem 0 .15rem}
+.risk .meta{font-size:.7rem;color:var(--ink-muted);line-height:1.3}
+.risk .imp{font-size:.78rem;font-weight:700;color:var(--ink);margin-top:.3rem}
+
+/* ---- role tiles (slide 9) ---- */
+.roles{display:grid;grid-template-columns:repeat(5,1fr);gap:.7rem}
+.role{background:#fff;border:1px solid var(--line);border-radius:12px;padding:.8rem;box-shadow:var(--shadow);text-align:left}
+.role .rico{width:34px;height:34px;border-radius:9px;background:var(--ink);color:#fff;display:grid;place-items:center;margin-bottom:.5rem}
+.role.alt .rico{background:var(--accent-deep)}
+.role h4{font-size:.86rem;font-weight:700}
+.role p{font-size:.7rem;color:var(--ink-muted);margin-top:.15rem;line-height:1.3}
+
+/* ---- trace chain (slide 10) ---- */
+.trace{display:flex;flex-direction:column;gap:.5rem}
+.trace .step{display:flex;align-items:center;gap:.8rem;background:#fff;border:1px solid var(--line);border-radius:10px;
+  padding:.55rem .85rem;box-shadow:var(--shadow)}
+.trace .step .tag{font-size:.66rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--accent-deep);
+  background:var(--accent-soft);padding:.12rem .45rem;border-radius:5px;flex:0 0 auto}
+.trace .step .txt{font-size:.84rem;color:var(--ink-soft)}
+.trace .step .val{margin-left:auto;font-weight:700;font-variant-numeric:tabular-nums;font-size:.84rem}
+.trace .arrow{height:14px;width:2px;background:var(--line);margin:0 auto}
+
+/* ---- map (slide 11) ---- */
+.mapbox{position:relative;background:#eef6f5;border:1px solid var(--line);border-radius:16px;overflow:hidden;
+  box-shadow:var(--shadow-lg);height:100%;min-height:340px;
+  background-image:radial-gradient(circle at 1px 1px,rgba(13,148,136,.12) 1px,transparent 0);background-size:26px 26px}
+.mapbox .water{position:absolute;inset:0;background:
+  linear-gradient(120deg,transparent 60%,rgba(34,211,238,.10) 100%)}
+.marker{position:absolute;transform:translate(-50%,-50%);text-align:center}
+.marker .dot{width:18px;height:18px;border-radius:99px;margin:0 auto;position:relative;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.marker .dot::after{content:"";position:absolute;inset:-6px;border-radius:99px;border:2px solid currentColor;opacity:.6}
+.slide.active .marker .dot::after{animation:ping 2.4s ease-out infinite}
+@keyframes ping{0%{transform:scale(.7);opacity:.7}100%{transform:scale(2.4);opacity:0}}
+.marker.high .dot{background:var(--high);color:var(--high)}
+.marker.med .dot{background:var(--medium);color:var(--medium)}
+.marker.low .dot{background:var(--low);color:var(--low)}
+.marker .nm{font-size:.68rem;font-weight:700;margin-top:.25rem;color:var(--ink-soft);white-space:nowrap;
+  background:rgba(255,255,255,.85);padding:.05rem .35rem;border-radius:5px}
+.legend{position:absolute;bottom:12px;left:12px;background:rgba(255,255,255,.92);border:1px solid var(--line);
+  border-radius:10px;padding:.5rem .7rem;font-size:.7rem;display:flex;flex-direction:column;gap:.25rem}
+.legend i{width:9px;height:9px;border-radius:99px;display:inline-block;margin-right:.4rem}
+
+/* ---- agent (slide 12) ---- */
+.chat{display:flex;flex-direction:column;gap:.7rem;max-width:none}
+.bubble{border-radius:14px;padding:.8rem 1rem;font-size:.9rem;line-height:1.45;box-shadow:var(--shadow);max-width:82%}
+.bubble.q{align-self:flex-end;background:var(--ink);color:#fff;border-bottom-right-radius:4px}
+.bubble.a{align-self:flex-start;background:#fff;border:1px solid var(--line);border-bottom-left-radius:4px}
+.bubble.a .ttl{font-weight:700;margin-bottom:.3rem}
+.bubble.a ul{margin:.2rem 0 .4rem 1rem;color:var(--ink-soft)}
+.bubble.a li{font-size:.82rem;margin:.12rem 0}
+.srcrow{display:flex;gap:.35rem;flex-wrap:wrap;margin-top:.35rem}
+.src{font-size:.64rem;font-weight:600;color:var(--accent-deep);background:var(--accent-soft);border-radius:5px;padding:.08rem .4rem}
+.cursor{display:inline-block;width:8px;height:1.05em;background:var(--accent);vertical-align:-2px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+
+/* ---- phones (slide 13) ---- */
+.phones{display:flex;gap:2.4rem;justify-content:center;align-items:center;perspective:1400px}
+.phone{width:230px;border-radius:34px;background:#0f172a;padding:9px;box-shadow:var(--shadow-lg);
+  position:relative;transform:rotateY(14deg) rotateX(3deg)}
+.phone:nth-child(2){transform:rotateY(-14deg) rotateX(3deg)}
+.phone .notch{position:absolute;top:14px;left:50%;transform:translateX(-50%);width:80px;height:18px;background:#0f172a;border-radius:0 0 12px 12px;z-index:3}
+.phone img{width:100%;border-radius:26px;display:block}
+
+/* ---- tech stack (slide 14) ---- */
+.stackgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:.9rem}
+.stackgroup{background:#fff;border:1px solid var(--line);border-radius:14px;padding:.9rem 1rem;box-shadow:var(--shadow)}
+.stackgroup .gh{font-size:.7rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-deep);margin-bottom:.55rem}
+.stackgroup .items{display:flex;flex-wrap:wrap;gap:.4rem}
+.tg{font-size:.78rem;font-weight:600;background:var(--sunken);border:1px solid var(--line);border-radius:8px;padding:.25rem .55rem;color:var(--ink-soft)}
+.flow{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-top:1rem;font-size:.78rem;color:var(--ink-muted);justify-content:center}
+.flow .f{background:#fff;border:1px solid var(--line);border-radius:8px;padding:.3rem .6rem;font-weight:600;color:var(--ink-soft)}
+.flow .ar{color:var(--accent)}
+
+/* ---- impact (slide 15) ---- */
+.impact{display:grid;grid-template-columns:repeat(3,1fr);gap:1.3rem 2rem}
+.impact .it{border-left:3px solid var(--accent);padding-left:1rem}
+
+/* ---- title slide ---- */
+#s-title{background:radial-gradient(130% 130% at 75% -20%,#0f766e 0%,#0f172a 48%,#0b1220 100%);color:#fff}
+#s-title h1{color:#fff;font-size:clamp(2.6rem,7vw,6rem)}
+#s-title .lead{color:#cbd5e1;max-width:46ch}
+#s-title .kicker{color:#5eead4}
+#s-title .pill{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.18);color:#a7f3d0}
+#s-title .pill.live .dot{background:#5eead4}
+#s-title .metaline{color:#94a3b8;font-size:.92rem}
+#s-title .metaline b{color:#e2e8f0}
+.tlogo{width:62px;height:62px;border-radius:16px;background:#fff;color:#0f766e;display:grid;place-items:center;
+  font-weight:900;font-size:2rem;box-shadow:0 10px 40px rgba(45,212,191,.35)}
+.rain{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0;opacity:.5}
+.rain span{position:absolute;top:-12%;width:1.5px;height:64px;background:linear-gradient(transparent,rgba(94,234,212,.55));
+  animation:rainfall linear infinite}
+@keyframes rainfall{to{transform:translateY(125vh)}}
+#s-title .inner{position:relative;z-index:1}
+
+/* closing slide */
+#s-end{background:radial-gradient(130% 130% at 20% 120%,#0f766e 0%,#0f172a 55%,#0b1220 100%);color:#fff}
+#s-end h2{color:#fff}#s-end .lead{color:#cbd5e1}
+#s-end .pill{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.18);color:#a7f3d0}
+#s-end .recap b{color:#5eead4}
+#s-end .acct{font-family:ui-monospace,Menlo,monospace;font-size:.8rem;color:#a7f3d0;background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.16);border-radius:8px;padding:.3rem .6rem}
+
+/* honest framing callout */
+.honest{display:flex;gap:.6rem;align-items:flex-start;background:#fffbeb;border:1px solid #fde68a;border-radius:12px;
+  padding:.7rem .9rem;font-size:.82rem;color:#92400e;line-height:1.45}
+.honest .ic{flex:0 0 auto;color:#b45309}
+.note{font-size:.78rem;color:var(--ink-faint)}
+
+/* overview mode — each slide is rendered full-size then zoomed to a faithful thumbnail */
+body.overview{overflow:auto}
+body.overview .deck{position:static;display:flex;flex-wrap:wrap;align-content:flex-start;
+  padding:10px;overflow:auto;background:#0b1220;min-height:100vh}
+body.overview .slide{position:relative;inset:auto;width:100vw;height:100vh;zoom:.2;
+  opacity:1;visibility:visible;overflow:hidden;cursor:pointer;flex:0 0 auto;margin:7px;
+  outline:3px solid transparent;outline-offset:3px;pointer-events:auto}
+body.overview .slide.active{outline-color:var(--accent)}
+body.overview .slide *{pointer-events:none}
+body.overview .brandbar,body.overview .hint,body.overview .navbtn,body.overview .progress{display:none}
+body.overview .slide .anim{opacity:1 !important;transform:none !important}
+body.overview .slide .bar{height:var(--h) !important}
+body.overview .rain span{animation:none}
+
+@media(max-width:900px){
+  .risks,.roles,.stackgrid,.impact{grid-template-columns:repeat(2,1fr)}
+  .scwrap{gap:.6rem}.phones{gap:1rem}.phone{width:150px}
+  .g3,.g4{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+<div class="deck" id="deck">
+
+  <!-- 1 · TITLE -->
+  <section class="slide" id="s-title">
+    <div class="rain" id="rain"></div>
+    <div class="inner">
+      <div class="anim fade" style="--d:.05s"><div class="tlogo">A</div></div>
+      <div class="kicker anim fade" style="--d:.2s;margin-top:1.4rem"><span class="dot"></span>Altis Groep · PE-backed roofing portfolio</div>
+      <h1 class="anim" style="--d:.32s;margin-top:.8rem">Weather-Aware<br>13-Week Cashflow Platform</h1>
+      <p class="lead anim" style="--d:.5s;margin-top:1.2rem">How will cash move over the next 13 weeks — and how does the weather delay billing and tighten covenant headroom?</p>
+      <div class="row anim" style="--d:.66s;margin-top:1.6rem;flex-wrap:wrap;gap:.6rem">
+        <span class="pill live"><span class="dot"></span>Live weather forecast</span>
+        <span class="pill">Web + native iOS</span>
+        <span class="pill">Supabase + local fallback</span>
+      </div>
+      <div class="metaline anim fade" style="--d:.82s;margin-top:1.8rem"><b>4</b> operating companies · <b>4</b> accounting systems · <b>1</b> reconciled model</div>
+    </div>
+  </section>
+
+  <!-- 2 · PROBLEM -->
+  <section class="slide" id="s-problem">
+    <div class="kicker anim fade"><span class="dot"></span>The problem</div>
+    <h2 class="anim" style="--d:.1s;margin-top:.8rem">The CFO can't answer one simple question</h2>
+    <p class="lead anim" style="--d:.22s;margin-top:1rem;font-style:italic;color:var(--ink-soft)">“How much cash will be in the account in eight weeks?”</p>
+    <div class="grid g4 anim" style="--d:.34s;margin-top:2rem">
+      <div class="card anim" style="--d:.4s"><h3>4 operating companies</h3><p>One PE-backed roofing portfolio, run as four independent opcos.</p></div>
+      <div class="card anim" style="--d:.52s"><h3>4 different systems</h3><p>Snelstart, Exact-style GL, Gilde, an invoice register — none talk to each other.</p></div>
+      <div class="card anim" style="--d:.64s"><h3>Billing slips when it rains</h3><p>Bad roofing weather delays execution, milestones and invoicing.</p></div>
+      <div class="card anim" style="--d:.76s"><h3>~4 weeks of debtor lag</h3><p>Payment terms push cash even later — against fixed covenant floors.</p></div>
+    </div>
+    <p class="lead anim" style="--d:.9s;margin-top:1.8rem">Cash arrives late <b>exactly when liquidity is tightest</b> — wet winters and early spring.</p>
+  </section>
+
+  <!-- 3 · INSIGHT (chain) -->
+  <section class="slide" id="s-insight">
+    <div class="kicker anim fade"><span class="dot"></span>The insight</div>
+    <h2 class="anim" style="--d:.1s;margin-top:.8rem">Bad weather doesn't destroy revenue — it <span class="accent">delays cash</span></h2>
+    <div class="chain">
+      <div class="node"><div class="ic">🌧️</div><h4>Weather risk</h4><p>3+ rain workdays in a week = high delay risk</p></div>
+      <div class="connector"><div class="spark"></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+      <div class="node"><div class="ic">🏗️</div><h4>Work / milestone delay</h4><p>Execution and milestones slip</p></div>
+      <div class="connector"><div class="spark"></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+      <div class="node"><div class="ic">🧾</div><h4>Billing delay</h4><p>Invoices go out 3–5 weeks later</p></div>
+      <div class="connector"><div class="spark"></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+      <div class="node"><div class="ic">💶</div><h4>Cash-in delay</h4><p>Convolved with ~4-week payment terms</p></div>
+    </div>
+    <div class="spread" style="margin-top:1.8rem">
+      <p class="lead anim" style="--d:1.3s;max-width:48ch">A wet week is followed, on average, by <b>below-baseline billing 3–5 weeks later</b>, then a partial catch-up around week 7. We shift <b>timing</b>, never volume.</p>
+      <div class="honest anim" style="--d:1.45s;max-width:42ch">
+        <span class="ic">⚠</span>
+        <div><b>Suggestive, not causal.</b> Strongest Pearson |r| ≈ 0.17–0.22, permutation p ≈ 0.07–0.19. Used only as a risk overlay on timing.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 · SOLUTION -->
+  <section class="slide" id="s-solution">
+    <div class="kicker anim fade"><span class="dot"></span>The solution</div>
+    <h2 class="anim" style="--d:.1s;margin-top:.7rem">One weather-aware billing-to-cash platform</h2>
+    <div class="row" style="margin-top:1.4rem;align-items:stretch;gap:2rem">
+      <div class="col" style="flex:1.05">
+        <div class="grid g3 anim" style="--d:.22s">
+          <div><div class="statnum" data-count="4">0</div><div class="statlbl">operating companies</div></div>
+          <div><div class="statnum" data-count="4">0</div><div class="statlbl">accounting systems</div></div>
+          <div><div class="statnum" data-count="13">0</div><div class="statlbl">week horizon</div></div>
+          <div><div class="statnum" data-count="3">0</div><div class="statlbl">scenarios</div></div>
+          <div><div class="statnum" data-count="8">0</div><div class="statlbl">risk signals</div></div>
+          <div><div class="statnum" data-count="7">0</div><div class="statlbl">role views</div></div>
+        </div>
+        <div class="col" style="gap:.55rem;margin-top:1.5rem">
+          <div class="chip anim" style="--d:.5s"><span class="ico">▸</span>One reconciled model from four accounting systems</div>
+          <div class="chip anim" style="--d:.58s"><span class="ico">▸</span>Live forecast recomputed on every page load</div>
+          <div class="chip anim" style="--d:.66s"><span class="ico">▸</span>Full traceability — every euro back to a source transaction</div>
+          <div class="chip anim" style="--d:.74s"><span class="ico">▸</span>Web dashboard + native iOS, one Supabase backend</div>
+        </div>
+      </div>
+      <div class="anim right" style="--d:.4s;flex:1.1;display:flex">
+        <div class="frame" style="width:100%">
+          <div class="bar"><i></i><i></i><i></i><span class="url">altis · /cfo</span></div>
+          <div class="shotwrap win scroll" style="--winh:56vh"><img src="shots/cfo.png" alt="CFO dashboard"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 · DATA RECONCILIATION -->
+  <section class="slide" id="s-data">
+    <div class="kicker anim fade"><span class="dot"></span>Foundation · data</div>
+    <h2 class="anim" style="--d:.1s;margin-top:.7rem">Four systems → one reconciled model</h2>
+    <div class="row" style="margin-top:1.4rem;gap:2rem;align-items:center">
+      <div style="flex:1.15">
+        <div class="row anim" style="--d:.2s;gap:.5rem;flex-wrap:wrap">
+          <span class="chip">Snelstart · FinTransactions</span>
+          <span class="chip">Exact-style GL</span>
+          <span class="chip">Gilde · Verkoopboek</span>
+          <span class="chip">Invoice register</span>
+        </div>
+        <div class="row anim" style="--d:.4s;justify-content:center;margin:.9rem 0;color:var(--accent);font-size:1.6rem">↓</div>
+        <div class="card anim" style="--d:.5s;border-left:4px solid var(--accent)">
+          <h3>Content-hash deduplication</h3>
+          <p>Identical re-exports collapse to one row; the <code>.3</code> files were exact duplicates, the <code>.2</code> files held <i>different</i> accounts and were kept. Filename-based skipping would have been wrong.</p>
+        </div>
+        <div class="honest anim" style="--d:.62s;margin-top:.9rem">
+          <span class="ic">✓</span>
+          <div>Validation anchor: deduped Peter Ummels = <b>9,958 transactions / €36.67M net</b> — matches the prior analysis exactly.</div>
+        </div>
+      </div>
+      <div class="grid anim right" style="--d:.45s;flex:.85;gap:1.1rem">
+        <div><div class="statnum"><span data-count="32278">0</span></div><div class="statlbl">transactions after dedup</div></div>
+        <div><div class="statnum"><span data-count="4616">0</span></div><div class="statlbl">duplicate rows removed</div></div>
+        <div><div class="statnum"><span data-count="26">0</span></div><div class="statlbl">source files ingested</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 · FORECAST MODEL -->
+  <section class="slide" id="s-model">
+    <div class="kicker anim fade"><span class="dot"></span>How it works · forecast engine</div>
+    <h2 class="anim" style="--d:.1s;margin-top:.6rem">A 6-layer forecast — pure, testable, explainable</h2>
+    <div class="layers" style="margin-top:1rem">
+      <div class="layer anim left" style="--d:.2s"><div class="n">1</div><div><div class="t">Baseline run-rate</div><div class="d">8-week rolling median + ISO-week seasonality per company</div></div></div>
+      <div class="layer anim left" style="--d:.3s"><div class="n">2</div><div><div class="t">Driver decomposition</div><div class="d">Materials 32% · Subcontractor 18% · Labour 22% · Overhead 10% of revenue</div></div></div>
+      <div class="layer anim left" style="--d:.4s"><div class="n">3</div><div><div class="t">Weather timing shift</div><div class="d">High (3+ rain days) → 25% of billing deferred · Medium (2 days) → 12% · catch-up over later weeks</div></div></div>
+      <div class="layer anim left" style="--d:.5s"><div class="n">4</div><div><div class="t">Payment-lag cash-in</div><div class="d">Billing spread over t+2…t+8, peak ≈ t+4 (debtor terms ~30–45 days)</div></div></div>
+      <div class="layer anim left" style="--d:.6s"><div class="n">5</div><div><div class="t">Scenarios</div><div class="d">Base · Wet quarter · Dry quarter — weather intensity 1.0 / 1.5 / 0.5</div></div></div>
+      <div class="layer anim left" style="--d:.7s"><div class="n">6</div><div><div class="t">Covenant headroom + trace links</div><div class="d">Closing cash vs floor, plus a trace record behind every single number</div></div></div>
+    </div>
+    <p class="note anim" style="--d:.85s;margin-top:1rem">Pure TypeScript function — no database side-effects, runs on every page load, covered by unit tests. <b>15 tests green</b> (7 engine + 8 pipeline).</p>
+  </section>
+
+  <!-- 7 · SCENARIOS -->
+  <section class="slide" id="s-scenarios">
+    <div class="kicker anim fade"><span class="dot"></span>Scenario analysis</div>
+    <h2 class="anim" style="--d:.1s;margin-top:.6rem">Base · Wet quarter · Dry quarter</h2>
+    <div class="row" style="gap:2.4rem;align-items:center;margin-top:.6rem">
+      <div class="scwrap anim" style="--d:.2s;flex:1.2">
+        <div class="sccol">
+          <div class="barbox"><div class="bar cin" style="--h:150px;--bd:.3s"></div><div class="bar cout" style="--h:120px;--bd:.45s"></div></div>
+          <div class="label">Base</div><div class="intensity accent">intensity 1.0</div><div class="sub">live + seasonal weather</div>
+        </div>
+        <div class="sccol">
+          <div class="barbox"><div class="bar cin" style="--h:108px;--bd:.55s"></div><div class="bar cout" style="--h:120px;--bd:.7s"></div></div>
+          <div class="label">Wet quarter</div><div class="intensity" style="color:var(--high)">intensity 1.5</div><div class="sub">cash shifts out & down</div>
+        </div>
+        <div class="sccol">
+          <div class="barbox"><div class="bar cin" style="--h:172px;--bd:.8s"></div><div class="bar cout" style="--h:120px;--bd:.95s"></div></div>
+          <div class="label">Dry quarter</div><div class="intensity" style="color:var(--low)">intensity 0.5</div><div class="sub">cash pulled earlier</div>
+        </div>
+      </div>
+      <div class="col anim right" style="--d:.4s;flex:.9">
+        <div class="card" style="border-left:4px solid var(--high)">
+          <h3 style="color:var(--high)">~€281k deferred</h3>
+          <p>In the wet-quarter scenario, roughly <b>€281,000 of billing is pushed beyond the 13-week horizon</b> — tracked as spillover, not lost.</p>
+        </div>
+        <div class="row" style="gap:.6rem">
+          <span class="pill"><span style="width:9px;height:9px;border-radius:99px;background:var(--cashin);display:inline-block"></span>Cash-in</span>
+          <span class="pill"><span style="width:9px;height:9px;border-radius:99px;background:var(--cashout);display:inline-block"></span>Cash-out</span>
+        </div>
+        <p class="lead">Timing shifts. <b>Total volume of work doesn't change.</b></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 · RISK SIGNALS -->
+  <section class="slide" id="s-risks">
+    <div class="kicker anim fade"><span class="dot"></span>Risk engine</div>
+    <h2 class="anim" style="--d:.1s;margin-top:.55rem">8 weather-to-cash risk signals</h2>
+    <p class="note anim" style="--d:.18s;margin-top:.4rem">Each: level · EUR impact · confidence · plain-English reason · trace to source.</p>
+    <div class="risks" style="margin-top:1.1rem">
+      <div class="risk med anim" style="--d:.26s"><span class="lv">Medium</span><h4>Weather Billing Risk</h4><div class="meta">Rain workdays defer billing timing</div><div class="imp">timing shift</div></div>
+      <div class="risk med anim" style="--d:.34s"><span class="lv">Medium</span><h4>Cash-In Delay</h4><div class="meta">Debtor terms push cash later</div><div class="imp">~4-week lag</div></div>
+      <div class="risk low anim" style="--d:.42s"><span class="lv">Low</span><h4>Payment Terms</h4><div class="meta">Spread t+2…t+8 modelled</div><div class="imp">assumption</div></div>
+      <div class="risk high anim" style="--d:.5s"><span class="lv">High</span><h4>Cash-Out Assumption</h4><div class="meta">No cost ledger — every cost is configured</div><div class="imp">honest, not a flaw</div></div>
+      <div class="risk high anim" style="--d:.58s"><span class="lv">High</span><h4>Covenant Headroom</h4><div class="meta">Closing cash vs floor (Opco C tight)</div><div class="imp">€-impact</div></div>
+      <div class="risk low anim" style="--d:.66s"><span class="lv">Low</span><h4>Data Quality</h4><div class="meta">Dedup + reconciliation passed</div><div class="imp">26 files</div></div>
+      <div class="risk med anim" style="--d:.74s"><span class="lv">Medium</span><h4>Forecast Confidence</h4><div class="meta">Per-week confidence rating</div><div class="imp">weak signal flagged</div></div>
+      <div class="risk med anim" style="--d:.82s"><span class="lv">Medium</span><h4>Opco Underperformance</h4><div class="meta">Company below portfolio run-rate</div><div class="imp">comparison</div></div>
+    </div>
+    <p class="lead anim" style="--d:.95s;margin-top:1.1rem">Every card answers three questions: <b>what's flagged, why, and what to do next.</b></p>
+  </section>
+
+  <!-- 9 · ROLES -->
+  <section class="slide" id="s-roles">
+    <div class="kicker anim fade"><span class="dot"></span>Role-based dashboards</div>
+    <h2 class="anim" style="--d:.1s;margin-top:.55rem">One model, the right view for every stakeholder</h2>
+    <div class="roles" style="margin-top:1.2rem">
+      <div class="role anim" style="--d:.2s"><div class="rico">€</div><h4>CFO</h4><p>13-week operating cash, 8 risk cards, scenarios, trace drawer</p></div>
+      <div class="role anim" style="--d:.28s"><div class="rico">⬡</div><h4>PE Board</h4><p>Portfolio outlook, companies-at-risk, covenant story</p></div>
+      <div class="role anim" style="--d:.36s"><div class="rico">⌂</div><h4>Opco MD</h4><p>Single company, weather calendar, ops recommendations</p></div>
+      <div class="role anim" style="--d:.44s"><div class="rico">⚒</div><h4>Project Lead</h4><p>Bad-weather windows, billing-timing shifts</p></div>
+      <div class="role alt anim" style="--d:.52s"><div class="rico">⌖</div><h4>Map</h4><p>Locations + weather-risk markers</p></div>
+      <div class="role alt anim" style="--d:.6s"><div class="rico">✦</div><h4>Agent</h4><p>Ask the forecast a question</p></div>
+      <div class="role alt anim" style="--d:.68s"><div class="rico">⇄</div><h4>API connectors</h4><p>Exact · SnelStart · Gilde plumbing</p></div>
+      <div class="role anim" style="--d:.76s"><div class="rico">◷</div><h4>Data Quality</h4><p>Lineage, dedup, reconciliation</p></div>
+      <div class="role anim" style="--d:.84s"><div class="rico">∑</div><h4>Methodology</h4><p>Every assumption + lag analysis</p></div>
+      <div class="role anim" style="--d:.92s"><div class="rico">⚙</div><h4>Admin</h4><p>Users, RBAC, data purge</p></div>
+    </div>
+    <p class="note anim" style="--d:1.05s;margin-top:1.1rem"><b>5 RBAC roles</b> behind Supabase Auth — each role's routes and navigation are gated by <code>middleware.ts</code>.</p>
+  </section>
+
+  <!-- 10 · TRACEABILITY -->
+  <section class="slide" id="s-trace">
+    <div class="kicker anim fade"><span class="dot"></span>Explainability</div>
+    <h2 class="anim" style="--d:.1s;margin-top:.55rem">Every euro traces back to source</h2>
+    <div class="row" style="gap:2.2rem;margin-top:1.2rem;align-items:flex-start">
+      <div class="trace" style="flex:1">
+        <div class="step anim left" style="--d:.2s"><span class="tag">Week</span><span class="txt">Forecast week — closing cash</span><span class="val">€612k</span></div>
+        <div class="arrow"></div>
+        <div class="step anim left" style="--d:.3s"><span class="tag">Baseline</span><span class="txt">Cash-in from billing run-rate</span><span class="val">+€180k</span></div>
+        <div class="step anim left" style="--d:.4s"><span class="tag">Weather</span><span class="txt">Timing shift (rain workdays)</span><span class="val" style="color:var(--high)">−€42k</span></div>
+        <div class="step anim left" style="--d:.5s"><span class="tag">Lag</span><span class="txt">Payment-lag convolution</span><span class="val">t+4 peak</span></div>
+        <div class="step anim left" style="--d:.6s"><span class="tag">Drivers</span><span class="txt">Materials · sub · labour · overhead</span><span class="val">−€118k</span></div>
+        <div class="arrow"></div>
+        <div class="step anim left" style="--d:.7s"><span class="tag">Source</span><span class="txt">Transaction + formula + assumption</span><span class="val">✓</span></div>
+      </div>
+      <div class="anim right" style="--d:.4s;flex:1.05">
+        <div class="frame">
+          <div class="bar"><i></i><i></i><i></i><span class="url">altis · trace drawer</span></div>
+          <div class="shotwrap"><img src="shots/trace-drawer.png" alt="Trace drawer"></div>
+        </div>
+        <p class="note" style="margin-top:.7rem">Click any week → the trace drawer opens. <b>No black box.</b></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11 · MAP -->
+  <section class="slide" id="s-map">
+    <div class="kicker anim fade"><span class="dot"></span>Locations & weather risk</div>
+    <h2 class="anim" style="--d:.1s;margin-top:.55rem">Portfolio risk on the map</h2>
+    <div class="row" style="gap:2rem;margin-top:1rem;align-items:stretch;flex:1">
+      <div class="anim left" style="--d:.25s;flex:1.25;display:flex">
+        <div class="mapbox" style="width:100%">
+          <div class="water"></div>
+          <div class="marker high" style="left:62%;top:64%"><div class="dot"></div><div class="nm">Peter Ummels · Brunssum</div></div>
+          <div class="marker med" style="left:48%;top:74%"><div class="dot"></div><div class="nm">Opco C · Maastricht proxy</div></div>
+          <div class="marker med" style="left:40%;top:52%"><div class="dot"></div><div class="nm">Opco A · S. Limburg proxy</div></div>
+          <div class="marker low" style="left:55%;top:40%"><div class="dot"></div><div class="nm">Company E · proxy</div></div>
+          <div class="legend">
+            <div><i style="background:var(--high)"></i>High weather/cash risk</div>
+            <div><i style="background:var(--medium)"></i>Medium</div>
+            <div><i style="background:var(--low)"></i>Low</div>
+          </div>
+        </div>
+      </div>
+      <div class="col anim right" style="--d:.4s;flex:.9">
+        <div class="card"><h3>Markers coloured by risk</h3><p>Each marker shows company, source system, the rain / bad-workday outlook, and estimated cash-timing impact — and links straight to the Opco or Project view.</p></div>
+        <div class="honest"><span class="ic">⚠</span><div>Only <b>Peter Ummels (Brunssum)</b> is a real location. The other three opcos are proxied to South Limburg / Maastricht and clearly labelled as assumptions.</div></div>
+        <p class="note">Built with Leaflet on the web and native <b>MapKit</b> on iOS — same data contract.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12 · AGENT -->
+  <section class="slide" id="s-agent">
+    <div class="kicker anim fade"><span class="dot"></span>Optional · CFO assistant</div>
+    <h2 class="anim" style="--d:.1s;margin-top:.55rem">Ask the forecast a question</h2>
+    <div class="row" style="gap:2.2rem;margin-top:1.1rem;align-items:flex-start">
+      <div class="chat" style="flex:1.15">
+        <div class="bubble q anim right" style="--d:.25s">Which company is most exposed to weather?</div>
+        <div class="bubble a anim left" style="--d:.6s">
+          <div class="ttl">Opco C (Gilde) — highest exposure</div>
+          <ul>
+            <li>Tight opening cash (€200k) against a €200k covenant floor</li>
+            <li>Wet quarter compresses headroom toward zero</li>
+            <li>~€281k of portfolio billing deferred beyond week 13</li>
+          </ul>
+          <div class="srcrow">
+            <span class="src">forecast_weeks</span><span class="src">weather_weekly</span>
+            <span class="src">data_inventory</span><span class="src">connector registry</span>
+          </div>
+        </div>
+      </div>
+      <div class="col anim right" style="--d:.45s;flex:.85">
+        <div class="card" style="border-left:4px solid var(--accent)">
+          <h3>Retrieval over internal data</h3>
+          <p>Answers come from the forecast engine, weather rows, source inventory and connector registry — every answer cites its sources.</p>
+        </div>
+        <div class="honest"><span class="ic">⚠</span><div><b>Not a generic chatbot.</b> It only answers from known internal data, assumptions and forecast outputs — small and auditable.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 13 · iOS -->
+  <section class="slide" id="s-ios">
+    <div class="kicker anim fade"><span class="dot"></span>Multi-surface</div>
+    <h2 class="anim" style="--d:.1s;margin-top:.55rem">Native iOS — same backend, same accounts</h2>
+    <div class="row" style="gap:2.4rem;margin-top:.6rem;align-items:center">
+      <div class="phones" style="flex:1">
+        <div class="phone anim scale" style="--d:.3s"><div class="notch"></div><img src="shots/mobile-cfo.png" alt="iOS CFO"></div>
+        <div class="phone anim scale" style="--d:.5s"><div class="notch"></div><img src="shots/mobile-board.png" alt="iOS Board"></div>
+      </div>
+      <div class="col anim right" style="--d:.4s;flex:.85">
+        <div class="chip"><span class="ico">▸</span>SwiftUI + supabase-swift — not a webview</div>
+        <div class="chip"><span class="ico">▸</span>Same demo accounts, same RLS-protected tables</div>
+        <div class="chip"><span class="ico">▸</span>Tabs: Portfolio · Companies · Map · Weather · About</div>
+        <p class="lead">A board member can check covenant headroom from their phone <b>before a lender call.</b></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 14 · TECH STACK -->
+  <section class="slide" id="s-stack">
+    <div class="kicker anim fade"><span class="dot"></span>Under the hood</div>
+    <h2 class="anim" style="--d:.1s;margin-top:.55rem">The stack</h2>
+    <div class="stackgrid" style="margin-top:1.1rem">
+      <div class="stackgroup anim" style="--d:.2s"><div class="gh">Frontend</div><div class="items"><span class="tg">Next.js 14</span><span class="tg">TypeScript</span><span class="tg">Tailwind</span><span class="tg">Recharts</span><span class="tg">Leaflet</span></div></div>
+      <div class="stackgroup anim" style="--d:.3s"><div class="gh">Backend</div><div class="items"><span class="tg">Supabase</span><span class="tg">Postgres</span><span class="tg">Auth + RLS</span><span class="tg">PostgREST</span></div></div>
+      <div class="stackgroup anim" style="--d:.4s"><div class="gh">Local fallback</div><div class="items"><span class="tg">SQLite</span><span class="tg">node:sqlite</span><span class="tg">no-auth dev</span></div></div>
+      <div class="stackgroup anim" style="--d:.5s"><div class="gh">Data pipeline</div><div class="items"><span class="tg">Python 3</span><span class="tg">pandas</span><span class="tg">openpyxl</span><span class="tg">requests</span></div></div>
+      <div class="stackgroup anim" style="--d:.6s"><div class="gh">Forecast engine</div><div class="items"><span class="tg">Pure TypeScript</span><span class="tg">tsx --test</span><span class="tg">15 tests green</span></div></div>
+      <div class="stackgroup anim" style="--d:.7s"><div class="gh">Weather + mobile</div><div class="items"><span class="tg">Open-Meteo</span><span class="tg">SwiftUI</span><span class="tg">MapKit</span></div></div>
+    </div>
+    <div class="flow anim fade" style="--d:.85s">
+      <span class="f">raw Excel</span><span class="ar">→</span><span class="f">Python pipeline</span><span class="ar">→</span>
+      <span class="f">SQLite / Supabase</span><span class="ar">→</span><span class="f">pure TS engine</span><span class="ar">→</span>
+      <span class="f">Next API</span><span class="ar">→</span><span class="f">dashboards + iOS</span>
+    </div>
+  </section>
+
+  <!-- 15 · IMPACT -->
+  <section class="slide" id="s-impact">
+    <div class="kicker anim fade"><span class="dot"></span>Impact</div>
+    <h2 class="anim" style="--d:.1s;margin-top:.55rem">The CFO sees the main risk in 10 seconds</h2>
+    <div class="impact" style="margin-top:1.6rem">
+      <div class="it anim" style="--d:.2s"><div class="statnum"><span data-count="32278">0</span></div><div class="statlbl">transactions reconciled across 4 systems</div></div>
+      <div class="it anim" style="--d:.3s"><div class="statnum">€<span data-count="36.67" data-dec="2">0</span><span class="u">M</span></div><div class="statlbl">net billing reconciled (Ummels anchor)</div></div>
+      <div class="it anim" style="--d:.4s"><div class="statnum"><span data-count="13">0</span></div><div class="statlbl">weeks of forward cash visibility</div></div>
+      <div class="it anim" style="--d:.5s"><div class="statnum">€<span data-count="281">0</span><span class="u">k</span></div><div class="statlbl">billing deferred in the wet scenario</div></div>
+      <div class="it anim" style="--d:.6s"><div class="statnum"><span data-count="3">0</span> clicks</div><div class="statlbl">portfolio → opco → week → source</div></div>
+      <div class="it anim" style="--d:.7s"><div class="statnum"><span data-count="15">0</span> ✓</div><div class="statlbl">tests green · build passes</div></div>
+    </div>
+    <p class="lead anim" style="--d:.85s;margin-top:1.8rem">Drill from <b>portfolio → opco → individual week → source transaction</b> — and switch base / wet / dry to see cash timing move live.</p>
+  </section>
+
+  <!-- 16 · CLOSING -->
+  <section class="slide" id="s-end">
+    <div class="kicker anim fade"><span class="dot"></span>Altis</div>
+    <h2 class="anim" style="--d:.1s;margin-top:.6rem">Weather-aware billing-to-cash,<br>end to end.</h2>
+    <p class="lead recap anim" style="--d:.28s;margin-top:1.2rem">
+      <b>4 companies</b> · <b>4 systems</b> · <b>1</b> reconciled 13-week forecast · a weather risk overlay · full traceability · web + native iOS.
+    </p>
+    <p class="lead anim" style="--d:.42s;margin-top:1rem">Bad weather delays cash — it doesn't destroy revenue. Every assumption is labelled. Nothing is a black box.</p>
+    <div class="row anim" style="--d:.58s;margin-top:1.8rem;gap:.6rem;flex-wrap:wrap">
+      <span class="pill">▶ Ready to deploy: <span class="acct" style="margin-left:.4rem">vercel deploy</span></span>
+      <span class="pill">Demo: <span class="acct" style="margin-left:.4rem">cfo@altis.demo · AltisDemo!2026</span></span>
+    </div>
+    <p class="anim fade" style="--d:.75s;margin-top:2rem;color:#94a3b8;font-size:.85rem">Thank you — questions welcome.</p>
+  </section>
+
+</div>
+
+<!-- chrome -->
+<button class="navbtn l" id="prev" aria-label="Previous"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+<button class="navbtn r" id="next" aria-label="Next"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></button>
+
+<div class="brandbar">
+  <div class="b-left"><span class="logo-a">A</span>Altis · Weather-Aware Cashflow Platform</div>
+  <div class="counter"><span id="cur">1</span> / <span id="total">16</span></div>
+</div>
+<div class="hint"><kbd>←</kbd><kbd>→</kbd> navigate · <kbd>F</kbd> fullscreen · <kbd>O</kbd> overview</div>
+
+<script>
+(function(){
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const total = slides.length;
+  let i = 0;
+  const progress = document.getElementById('progress');
+  const cur = document.getElementById('cur');
+  document.getElementById('total').textContent = total;
+
+  // --- rain on title slide ---
+  const rain = document.getElementById('rain');
+  if(rain){
+    let html='';
+    for(let r=0;r<46;r++){
+      const left=Math.random()*100, dur=.5+Math.random()*0.9, delay=Math.random()*2, op=.25+Math.random()*.5, h=40+Math.random()*50;
+      html+=`<span style="left:${left}%;animation-duration:${dur}s;animation-delay:${delay}s;opacity:${op};height:${h}px"></span>`;
+    }
+    rain.innerHTML=html;
+  }
+
+  // --- count-up ---
+  function countUp(slide){
+    slide.querySelectorAll('[data-count]').forEach(el=>{
+      const target=parseFloat(el.dataset.count);
+      const dec=parseInt(el.dataset.dec||'0',10);
+      const dur=1100; const start=performance.now();
+      function tick(now){
+        const p=Math.min(1,(now-start)/dur);
+        const e=1-Math.pow(1-p,3); // easeOutCubic
+        const v=target*e;
+        el.textContent = dec>0 ? v.toFixed(dec) : Math.round(v).toLocaleString('en-US');
+        if(p<1) requestAnimationFrame(tick);
+        else el.textContent = dec>0 ? target.toFixed(dec) : Math.round(target).toLocaleString('en-US');
+      }
+      el.textContent = dec>0 ? '0' : '0';
+      requestAnimationFrame(tick);
+    });
+  }
+
+  function show(n){
+    n=Math.max(0,Math.min(total-1,n));
+    slides.forEach((s,idx)=>{
+      s.classList.toggle('active',idx===n);
+      s.classList.toggle('prev',idx<n);
+    });
+    i=n;
+    progress.style.width=((n)/(total-1)*100)+'%';
+    cur.textContent=n+1;
+    // keep the URL hash in sync (wrapped: some browsers block replaceState on file://)
+    try{ if(location.hash!=='#'+(n+1)) history.replaceState(null,'','#'+(n+1)); }catch(e){}
+    const active=slides[n];
+    // restart count-ups
+    countUp(active);
+  }
+  function next(){ if(i<total-1) show(i+1); }
+  function prev(){ if(i>0) show(i-1); }
+
+  // keyboard
+  document.addEventListener('keydown',e=>{
+    if(document.body.classList.contains('overview')){
+      if(e.key==='Escape'||e.key==='o'||e.key==='O'){ toggleOverview(); }
+      return;
+    }
+    switch(e.key){
+      case 'ArrowRight': case 'PageDown': case ' ': case 'Enter': e.preventDefault(); next(); break;
+      case 'ArrowLeft': case 'PageUp': e.preventDefault(); prev(); break;
+      case 'ArrowDown': e.preventDefault(); next(); break;
+      case 'ArrowUp': e.preventDefault(); prev(); break;
+      case 'Home': e.preventDefault(); show(0); break;
+      case 'End': e.preventDefault(); show(total-1); break;
+      case 'f': case 'F':
+        if(!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+        else document.exitFullscreen?.();
+        break;
+      case 'o': case 'O': toggleOverview(); break;
+    }
+  });
+
+  document.getElementById('next').addEventListener('click',next);
+  document.getElementById('prev').addEventListener('click',prev);
+
+  // click-to-advance (ignore clicks on buttons/links)
+  document.getElementById('deck').addEventListener('click',e=>{
+    if(document.body.classList.contains('overview')) return;
+    if(e.target.closest('button,a,.navbtn,.marker')) return;
+    const x=e.clientX, w=window.innerWidth;
+    if(x < w*0.18) prev(); else next();
+  });
+
+  // touch swipe
+  let tx=0;
+  document.addEventListener('touchstart',e=>{tx=e.touches[0].clientX},{passive:true});
+  document.addEventListener('touchend',e=>{
+    const dx=e.changedTouches[0].clientX-tx;
+    if(Math.abs(dx)>50){ dx<0?next():prev(); }
+  },{passive:true});
+
+  // overview mode
+  function toggleOverview(){
+    document.body.classList.toggle('overview');
+    if(!document.body.classList.contains('overview')) show(i);
+  }
+  document.getElementById('deck').addEventListener('click',e=>{
+    if(!document.body.classList.contains('overview')) return;
+    const s=e.target.closest('.slide');
+    if(s){ const idx=slides.indexOf(s); toggleOverview(); show(idx); }
+  });
+
+  // deep-linking: respond to manual hash edits and browser back/forward
+  window.addEventListener('hashchange',()=>{
+    const n=parseInt((location.hash||'#1').slice(1),10);
+    if(n && n-1!==i) show(n-1);
+  });
+
+  // init from hash
+  const startN=Math.max(1,Math.min(total,parseInt((location.hash||'#1').slice(1),10)||1));
+  show(startN-1);
+})();
+</script>
+</body>
+</html>

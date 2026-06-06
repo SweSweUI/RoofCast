@@ -4,7 +4,7 @@ export interface RiskContext {
   isPortfolio: boolean;
   threshold: number | null; // covenant floor (€)
   driverTotalPct: number; // sum of cash-out driver shares (assumption)
-  paymentStressCashIn: number | null; // 13-wk cash-in if debtor days +2 weeks
+  paymentStressCashIn: number | null; // horizon cash-in if debtor days +2 weeks
   reconWorstVariancePct: number | null; // worst |weekly vs monthly-summary| variance
   thinHistory: boolean; // any company with < 26 weeks of history
   underperformers: { name: string; pct: number; eur: number }[]; // recent run-rate below prior
@@ -26,6 +26,7 @@ export const LAG_PROFILE =
 export function computeRiskSignals(result: ForecastResult, ctx: RiskContext): RiskSignal[] {
   const weeks = result.weeks;
   const k = result.kpis;
+  const horizon = Math.max(1, weeks.length);
   const meanConf = Math.round(weeks.reduce((s, w) => s + w.confidence, 0) / Math.max(1, weeks.length));
 
   // 1) Weather Billing Risk
@@ -40,9 +41,9 @@ export function computeRiskSignals(result: ForecastResult, ctx: RiskContext): Ri
     eurImpact: Math.round(wxImpact),
     confidence: weeks.some((w) => w.weatherRisk !== 'low' && w.isLiveWeather) ? 70 : 55,
     reason:
-      `${wxWeeks.length} of 13 weeks carry weather-delay risk (${wxHigh.length} high). ` +
+      `${wxWeeks.length} of ${horizon} weeks carry weather-delay risk (${wxHigh.length} high). ` +
       `≈ ${eur(wxImpact)} of billing is shifted later in those weeks.`,
-    trace: `weather_weekly (rain workdays) → billing timing shift. ${LAG_PROFILE}`,
+    trace: `weather_weekly (${result.params.weatherRiskMode}) → billing timing shift. ${LAG_PROFILE}`,
   };
 
   // 2) Cash-In Delay Risk (billing collected later than it is billed)
@@ -52,7 +53,7 @@ export function computeRiskSignals(result: ForecastResult, ctx: RiskContext): Ri
   const cashInDelay: RiskSignal = {
     key: 'cash_in_delay',
     title: 'Cash-In Delay Risk',
-    level: earlyDeferred > 0.4 * (k.totalCashIn / 13) * 4 ? 'medium' : 'low',
+    level: earlyDeferred > 0.4 * (k.totalCashIn / horizon) * 4 ? 'medium' : 'low',
     impactedWeeks: weeks.slice(0, 4).map((w) => w.weekStart),
     eurImpact: Math.round(earlyDeferred),
     confidence: 65,
@@ -92,7 +93,7 @@ export function computeRiskSignals(result: ForecastResult, ctx: RiskContext): Ri
     eurImpact: Math.round(k.totalCashOut),
     confidence: 45,
     reason:
-      `All cash-out (${eur(k.totalCashOut)} over 13 wks) is modelled from driver % assumptions ` +
+      `All cash-out (${eur(k.totalCashOut)} over ${horizon} wks) is modelled from driver % assumptions ` +
       `(${pct(ctx.driverTotalPct)} of production) — the source data has no AP / cost ledger.`,
     trace: 'Assumptions: materials/subcontractor/labour/overhead shares. Replace with real AP to remove this risk.',
   };
@@ -149,7 +150,7 @@ export function computeRiskSignals(result: ForecastResult, ctx: RiskContext): Ri
     confidence: meanConf,
     reason:
       `Mean weekly confidence ${meanConf}%. Weeks 1–${liveWeeks} use live Open-Meteo (higher); ` +
-      `weeks ${liveWeeks + 1}–13 use seasonal climatology (lower)` +
+      `weeks ${liveWeeks + 1}–${horizon} use seasonal climatology (lower)` +
       (ctx.thinHistory ? '; a company has thin history (< 26 wks).' : '.'),
     trace: 'Live-vs-seasonal weather split + history depth.',
   };

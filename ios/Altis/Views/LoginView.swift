@@ -58,6 +58,23 @@ struct LoginView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(appState.isAuthenticating)
+
+                // One-tap demo: signs in with the read-only CFO demo account so
+                // reviewers can see live data without typing credentials.
+                Button(action: demoLogin) {
+                    Text("Explore the demo")
+                        .fontWeight(.medium)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 6)
+                }
+                .buttonStyle(.bordered)
+                .disabled(appState.isAuthenticating)
+
+                Text("Signs in with the CFO demo account — full live dashboard, read-only.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
             }
             .padding(.horizontal, 28)
 
@@ -88,4 +105,19 @@ struct LoginView: View {
         focus = nil
         Task { await appState.signIn(email: email, password: password) }
     }
+
+    private func demoLogin() {
+        focus = nil
+        email = DemoLogin.email
+        password = DemoLogin.password
+        Task { await appState.signIn(email: DemoLogin.email, password: DemoLogin.password) }
+    }
+}
+
+/// Shared, read-only demo account used by the "Explore the demo" button.
+/// These credentials are intentionally public (RLS restricts the data to
+/// anonymised, company-level analytics).
+enum DemoLogin {
+    static let email = "cfo@altis.demo"
+    static let password = "AltisDemo!2026"
 }

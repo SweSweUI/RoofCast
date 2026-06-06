@@ -69,11 +69,12 @@ export async function computePortfolio(
   today = new Date(),
 ): Promise<PortfolioForecast> {
   const list = await forecastCompanies();
+  const { covenantFloorOverride: _portfolioFloor, ...companyOverrides } = overrides;
   const companies = await Promise.all(
-    list.map((c) => computeForecast(scenario, c.id, overrides, today)),
+    list.map((c) => computeForecast(scenario, c.id, companyOverrides, today)),
   );
   const portfolioCov = (await getCovenants(null)).find((c) => c.metric === 'min_13w_liquidity');
-  const threshold = portfolioCov?.threshold ?? null;
+  const threshold = overrides.covenantFloorOverride ?? portfolioCov?.threshold ?? null;
 
   const ref = companies[0]?.weeks ?? [];
   const weeks: ForecastWeek[] = ref.map((_, i) => {
@@ -98,6 +99,8 @@ export async function computePortfolio(
       isLiveWeather: base.isLiveWeather,
       weatherSource: base.weatherSource,
       expectedRainWorkdays: Math.max(...slice.map((w) => w.expectedRainWorkdays)),
+      weatherRiskBasis: base.weatherRiskBasis,
+      weatherRiskValue: Math.max(...slice.map((w) => w.weatherRiskValue)),
       weatherRisk: worstWx,
       delayScore: Math.round((slice.reduce((s, w) => s + w.delayScore, 0) / slice.length) * 10) / 10,
       baselineProduction: sum((w) => w.baselineProduction),
@@ -159,7 +162,7 @@ export async function computePortfolio(
       liveWeatherWeeks: weeks.filter((w) => w.isLiveWeather).length,
     },
     covenants: portfolioCov ? [portfolioCov] : [],
-    params: companies[0]?.params as ForecastParams,
+    params: { ...(companies[0]?.params as ForecastParams), covenantFloorOverride: overrides.covenantFloorOverride },
   };
 
   return { portfolio, companies };

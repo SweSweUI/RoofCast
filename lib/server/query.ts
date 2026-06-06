@@ -1,4 +1,4 @@
-import type { ForecastParams, Scenario } from '../types';
+import type { ForecastParams, Scenario, WeatherRiskMode } from '../types';
 import { DbUnavailableError } from '../db';
 
 export function parseScenario(sp: URLSearchParams): Scenario {
@@ -10,6 +10,12 @@ export function parseScenario(sp: URLSearchParams): Scenario {
 export function parseOverrides(sp: URLSearchParams): Partial<ForecastParams> {
   const o: Partial<ForecastParams> = {};
   const drivers: Partial<ForecastParams['drivers']> = {};
+  const weatherRiskModes = new Set<WeatherRiskMode>([
+    'rain_2mm_workdays',
+    'heavy_5mm_workdays',
+    'bad_workdays',
+    'delay_score',
+  ]);
   const numf = (k: string) => {
     const v = sp.get(k);
     if (v == null || v === '') return undefined;
@@ -21,10 +27,22 @@ export function parseOverrides(sp: URLSearchParams): Partial<ForecastParams> {
     if (v !== undefined) drivers[d] = v;
   }
   if (Object.keys(drivers).length) o.drivers = drivers as ForecastParams['drivers'];
+  const horizon = numf('horizonWeeks');
+  if (horizon !== undefined) o.horizonWeeks = Math.max(4, Math.min(52, Math.round(horizon)));
   const high = numf('weatherShiftHigh');
   if (high !== undefined) o.weatherShiftHigh = high;
   const med = numf('weatherShiftMedium');
   if (med !== undefined) o.weatherShiftMedium = med;
+  const riskMode = sp.get('weatherRiskMode');
+  if (riskMode && weatherRiskModes.has(riskMode as WeatherRiskMode)) {
+    o.weatherRiskMode = riskMode as WeatherRiskMode;
+  }
+  const riskHigh = numf('weatherHighThreshold');
+  if (riskHigh !== undefined) o.weatherHighThreshold = riskHigh;
+  const riskMedium = numf('weatherMediumThreshold');
+  if (riskMedium !== undefined) o.weatherMediumThreshold = riskMedium;
+  const covenantFloor = numf('covenantFloor');
+  if (covenantFloor !== undefined) o.covenantFloorOverride = Math.max(0, Math.round(covenantFloor));
   const opening = numf('openingCash');
   if (opening !== undefined) o.openingCash = opening;
   const lookback = numf('baselineLookbackWeeks');

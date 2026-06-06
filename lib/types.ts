@@ -10,6 +10,7 @@ export const SCENARIO_LABELS: Record<Scenario, string> = {
 
 export type RiskLevel = 'low' | 'medium' | 'high';
 export type Role = 'cfo' | 'board' | 'opco' | 'project';
+export type WeatherRiskMode = 'rain_2mm_workdays' | 'heavy_5mm_workdays' | 'bad_workdays' | 'delay_score';
 
 export interface Company {
   id: number;
@@ -101,11 +102,15 @@ export interface ForecastParams {
   paymentLagWeights: number[]; // index = weeks after billing, sums to 1
   weatherShiftHigh: number; // share of production shifted out on a high-risk week
   weatherShiftMedium: number; // share on a medium-risk week
+  weatherRiskMode: WeatherRiskMode; // which weather field drives low/medium/high risk
+  weatherMediumThreshold: number; // medium risk threshold for the selected weatherRiskMode
+  weatherHighThreshold: number; // high risk threshold for the selected weatherRiskMode
   catchUpStartLag: number; // first lag (weeks) the shifted work reappears
   catchUpWeights: number[]; // distribution of shifted work into later weeks
   baselineLookbackWeeks: number; // trailing weeks for level
   // scenario weather intensity multiplier on expected rain workdays / delay score
   weatherIntensity: number;
+  covenantFloorOverride?: number; // optional dashboard override for the covenant warning floor
 }
 
 export interface DriverContribution {
@@ -121,6 +126,8 @@ export interface ForecastWeek {
   isLiveWeather: boolean;
   weatherSource: string;
   expectedRainWorkdays: number;
+  weatherRiskBasis: string;
+  weatherRiskValue: number;
   weatherRisk: RiskLevel;
   delayScore: number;
   baselineProduction: number;
@@ -177,6 +184,62 @@ export interface ForecastResult {
   kpis: ForecastKpis;
   covenants: Covenant[];
   params: ForecastParams;
+}
+
+export interface WeatherApi167Current {
+  time: string | null;
+  temperature: number | null;
+  feelsLike: number | null;
+  humidity: number | null;
+  windSpeed: number | null;
+  windDirectionText: string | null;
+  pressure: number | null;
+  visibility: number | null;
+  precipitation: number | null;
+  cloudCover: number | null;
+  uvIndex: number | null;
+  condition: string | null;
+}
+
+export interface WeatherApi167Hourly {
+  time: string;
+  temperature: number | null;
+  condition: string | null;
+  precipitationProbability: number | null;
+}
+
+export interface WeatherApi167Daily {
+  date: string;
+  condition: string | null;
+  tempMax: number | null;
+  tempMin: number | null;
+  precipitation: number | null;
+  uvIndex: number | null;
+}
+
+export interface WeatherApi167AirQuality {
+  time: string | null;
+  usAqi: number | null;
+  category: string | null;
+  pm25: number | null;
+  pm10: number | null;
+  nitrogenDioxide: number | null;
+  ozone: number | null;
+}
+
+export interface WeatherApi167Detail {
+  provider: 'rapidapi-weather-api167' | 'weather-api-site-direct';
+  providerLabel: string;
+  rapidApiConfigured: boolean;
+  fetchedAt: string;
+  latitude: number;
+  longitude: number;
+  timezone: string | null;
+  current: WeatherApi167Current | null;
+  hourly: WeatherApi167Hourly[];
+  daily: WeatherApi167Daily[];
+  airQuality: WeatherApi167AirQuality | null;
+  error?: string;
 }
 
 export interface MapCompanyMarker {

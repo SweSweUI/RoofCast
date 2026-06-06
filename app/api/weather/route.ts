@@ -1,6 +1,7 @@
 import { computeForecast } from '@/lib/forecast';
 import { getCompanyByCode, getWeatherWeekly } from '@/lib/queries';
 import { jsonError, parseOverrides, parseScenario } from '@/lib/server/query';
+import { getWeatherApi167Detail } from '@/lib/weatherApi167';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -27,16 +28,21 @@ export async function GET(req: Request) {
       ? (await getWeatherWeekly(co.weatherLocationId)).filter((w) => !w.isForecast).slice(-16)
       : [];
 
+    const weatherApi167 = await getWeatherApi167Detail(co.latitude, co.longitude);
+
     return Response.json({
       company: {
         code: co.code,
         name: co.shortName,
         location: co.locationName,
         weatherLocationId: co.weatherLocationId,
+        latitude: co.latitude,
+        longitude: co.longitude,
       },
       scenario,
       series,
       recentHistory,
+      weatherApi167,
     });
   } catch (e) {
     return jsonError(e);

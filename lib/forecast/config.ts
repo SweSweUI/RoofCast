@@ -24,6 +24,9 @@ export const DEFAULT_PARAMS: Omit<ForecastParams, 'startWeek' | 'openingCash'> =
   // Weather-delay timing shift: share of a week's billing pushed later.
   weatherShiftHigh: 0.25, // 3+ rain workdays
   weatherShiftMedium: 0.12, // 2 rain workdays
+  weatherRiskMode: 'rain_2mm_workdays',
+  weatherMediumThreshold: 2,
+  weatherHighThreshold: 3,
   // Shifted work reappears (catch-up) starting +4 weeks, spread over +4..+7.
   catchUpStartLag: 4,
   catchUpWeights: [0.3, 0.25, 0.25, 0.2],

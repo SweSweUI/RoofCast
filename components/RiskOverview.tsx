@@ -18,9 +18,19 @@ const BORDER: Record<RiskLevel, string> = {
 };
 
 /** Risk-first overview: the eight weather-to-cash risk signals as cards. */
-export function RiskOverview({ company, scenario }: { company: string; scenario: Scenario }) {
+export function RiskOverview({
+  company,
+  scenario,
+  extra = '',
+  horizonWeeks = 13,
+}: {
+  company: string;
+  scenario: Scenario;
+  extra?: string;
+  horizonWeeks?: number;
+}) {
   const { data, loading } = useApi<RisksResponse>(
-    `/api/risks?company=${encodeURIComponent(company)}&scenario=${scenario}`,
+    `/api/risks?company=${encodeURIComponent(company)}&scenario=${scenario}${extra}`,
   );
 
   if (loading && !data) return <LoadingBlock label="Assessing risk signals…" />;
@@ -33,7 +43,7 @@ export function RiskOverview({ company, scenario }: { company: string; scenario:
   return (
     <Card
       title="Risk overview — weather-to-cash"
-      subtitle="Eight signals: where billing/cash timing, assumptions and covenants put the 13-week forecast at risk"
+      subtitle={`Eight signals: where billing/cash timing, assumptions and covenants put the ${horizonWeeks}-week forecast at risk`}
       right={
         <div className="flex items-center gap-2 text-2xs">
           <span className="rounded bg-red-50 px-1.5 py-0.5 font-medium text-risk-high">{high} high</span>

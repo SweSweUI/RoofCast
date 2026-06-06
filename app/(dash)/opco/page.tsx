@@ -23,7 +23,8 @@ import { DriverSplitChart } from '@/components/charts/DriverSplitChart';
 import { CovenantChart } from '@/components/charts/CovenantChart';
 import { WeatherCalendar, type WeatherCell } from '@/components/charts/WeatherCalendar';
 import { RiskOverview } from '@/components/RiskOverview';
-import type { ForecastWeek } from '@/lib/types';
+import { WeatherApi167Panel } from '@/components/WeatherApi167Panel';
+import type { ForecastWeek, WeatherApi167Detail } from '@/lib/types';
 
 export default function OpcoPage() {
   const { scenario, company } = useDashboardState();
@@ -32,9 +33,10 @@ export default function OpcoPage() {
 
   const { result, loading, error } = useForecast(code, scenario);
   const weatherApi = useApi<{
-    company: { code: string; name: string; location: string; weatherLocationId: number };
+    company: { code: string; name: string; location: string; weatherLocationId: number; latitude: number | null; longitude: number | null };
     series: WeatherCell[];
     recentHistory: unknown[];
+    weatherApi167: WeatherApi167Detail | null;
   }>(`/api/weather?company=${encodeURIComponent(code)}&scenario=${scenario}`);
   const companiesApi = useApi<{ companies: Array<{ code: string; name: string; locationName: string | null; sourceSystem: string | null }> }>(
     '/api/companies',
@@ -192,7 +194,7 @@ export default function OpcoPage() {
       {/* Weather calendar */}
       <Card
         title="Weather impact on upcoming weeks"
-        subtitle="Live near-term Open-Meteo forecast · seasonal climatology for later weeks · click a week to trace"
+        subtitle="Open-Meteo forecast drives the cash timing model · click a week to trace"
       >
         {weatherSeries.length > 0 ? (
           <WeatherCalendar series={weatherSeries} onPick={setWeek} activeWeek={week ?? undefined} />
@@ -202,6 +204,13 @@ export default function OpcoPage() {
         <p className="mt-3 text-2xs text-ink-faint">
           Live (Open-Meteo) for near-term weeks; ISO-week seasonal climatology for later weeks.
         </p>
+      </Card>
+
+      <Card
+        title="Live site weather detail"
+        subtitle="Weather API 167 adds current conditions, hourly probability, daily condition, and air quality."
+      >
+        <WeatherApi167Panel detail={weatherApi.data?.weatherApi167} loading={weatherApi.loading} />
       </Card>
 
       {/* Operational recommendations */}

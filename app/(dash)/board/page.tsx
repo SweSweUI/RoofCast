@@ -21,6 +21,7 @@ import { CashflowChart } from '@/components/charts/CashflowChart';
 import { CovenantChart } from '@/components/charts/CovenantChart';
 import { CompanyCompareChart } from '@/components/charts/CompanyCompareChart';
 import { RiskOverview } from '@/components/RiskOverview';
+import { EmailFindingsButton } from '@/components/EmailFindingsButton';
 
 export default function BoardPage() {
   const { scenario } = useDashboardState();
@@ -56,6 +57,26 @@ export default function BoardPage() {
     if (diff !== 0) return diff;
     return a.kpis.minClosingCash - b.kpis.minClosingCash;
   });
+  const weatherImpact = result.weeks.reduce((sum, w) => sum + w.weatherAdjustment, 0);
+  const shareEmail = buildBoardEmail({
+    companyCount: companies?.length ?? 0,
+    startWeek: result.weeks[0].weekStart,
+    netCashFlow: k.netCashFlow,
+    totalCashIn: k.totalCashIn,
+    totalCashOut: k.totalCashOut,
+    minClosingCash: k.minClosingCash,
+    minClosingWeek: k.minClosingWeek,
+    atRiskCount: atRisk.length,
+    liveWeatherWeeks: k.liveWeatherWeeks,
+    weatherImpact,
+    topCompanies: sortedCompanies.slice(0, 5).map((company) => ({
+      name: company.companyName,
+      netCashFlow: company.kpis.netCashFlow,
+      minClosingCash: company.kpis.minClosingCash,
+      weeksAtRisk: company.kpis.weeksAtRisk,
+      covenantBreach: company.kpis.covenantBreach,
+    })),
+  });
 
   return (
     <div className="space-y-5">
@@ -66,9 +87,12 @@ export default function BoardPage() {
         >
           PE Board — Portfolio Cash Outlook
         </SectionTitle>
-        <Pill tone="accent" title="Operating forecast from live Open-Meteo near term plus seasonal climatology beyond the reliable live-weather window.">
-          {k.liveWeatherWeeks} live-weather weeks · then seasonal
-        </Pill>
+        <div className="flex flex-wrap items-center gap-2">
+          <EmailFindingsButton subject={shareEmail.subject} body={shareEmail.body} />
+          <Pill tone="accent" title="Operating forecast from live Open-Meteo near term plus seasonal climatology beyond the reliable live-weather window.">
+            {k.liveWeatherWeeks} live-weather weeks · then seasonal
+          </Pill>
+        </div>
       </div>
 
       {/* 2. KPI strip */}
@@ -285,6 +309,52 @@ export default function BoardPage() {
       />
     </div>
   );
+}
+
+function buildBoardEmail(input: {
+  companyCount: number;
+  startWeek: string;
+  netCashFlow: number;
+  totalCashIn: number;
+  totalCashOut: number;
+  minClosingCash: number;
+  minClosingWeek: string;
+  atRiskCount: number;
+  liveWeatherWeeks: number;
+  weatherImpact: number;
+  topCompanies: Array<{
+    name: string;
+    netCashFlow: number;
+    minClosingCash: number;
+    weeksAtRisk: number;
+    covenantBreach: boolean;
+  }>;
+}) {
+  const subject = 'Altis portfolio cash forecast findings';
+  const body = [
+    'Altis portfolio cash forecast findings',
+    `Forecast start: ${dateShort(input.startWeek)}`,
+    '',
+    `Portfolio companies: ${input.companyCount}`,
+    `13-week net cash: ${signedEur(input.netCashFlow)}`,
+    `Cash-in: ${eur(input.totalCashIn)}`,
+    `Cash-out: ${eur(input.totalCashOut)}`,
+    `Minimum portfolio liquidity: ${eur(input.minClosingCash)} in week of ${dateShort(input.minClosingWeek)}`,
+    `Companies at risk: ${input.atRiskCount}/${input.companyCount}`,
+    `Weather timing impact: ${signedEur(input.weatherImpact)}`,
+    `Weather basis: ${input.liveWeatherWeeks}/13 live Open-Meteo weeks, then seasonal climatology`,
+    '',
+    'Companies to review:',
+    ...(input.topCompanies.length
+      ? input.topCompanies.map((company) =>
+          `- ${company.name}: net cash ${signedEur(company.netCashFlow)}, min closing ${eur(company.minClosingCash)}, risk weeks ${company.weeksAtRisk}/13${company.covenantBreach ? ', covenant breach' : ''}`,
+        )
+      : ['- No company rows available.']),
+    '',
+    'Please review the dashboard for traceability, source data, and weekly detail.',
+  ].join('\n');
+
+  return { subject, body };
 }
 
 function WeatherImpactList({ weeks }: { weeks: any[] }) {

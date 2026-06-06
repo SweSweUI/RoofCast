@@ -15,6 +15,9 @@ Key variables:
 | `OPEN_METEO_FORECAST_URL` | `https://api.open-meteo.com/v1/forecast` | Override only if proxying the API |
 | `OPEN_METEO_ARCHIVE_URL` | `https://archive-api.open-meteo.com/v1/archive` | Override only if proxying the API |
 | `WEATHER_FORECAST_DAYS` | `16` | Days of live forecast requested (Open-Meteo maximum is 16) |
+| `WEATHER_API167_RAPIDAPI_KEY` | _(unset)_ | RapidAPI key for Weather API 167, used server-side for extra current/hourly/daily/air-quality detail |
+| `WEATHER_API167_RAPIDAPI_HOST` | `weather-api167.p.rapidapi.com` | RapidAPI host header for Weather API 167 |
+| `WEATHER_API167_USE_DIRECT_FALLBACK` | `true` | Use the provider's direct keyless endpoint for local demo when RapidAPI key is missing or failing |
 | `DATABASE_URL` | _(unset)_ | Postgres/Supabase connection string (see Vercel + Supabase section) |
 | `NEXT_PUBLIC_SUPABASE_URL` | _(unset)_ | Supabase project URL (optional) |
 | `SUPABASE_SERVICE_ROLE_KEY` | _(unset)_ | Supabase service role key — server-side only, never expose to client |

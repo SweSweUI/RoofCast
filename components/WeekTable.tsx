@@ -4,7 +4,7 @@ import type { ForecastWeek } from '@/lib/types';
 import { eur, signedEur, weekRange } from '@/lib/format';
 import { Pill, RiskBadge, Td, Th } from './ui';
 
-/** The 13-week forecast table. Click a row to open the traceability drawer. */
+/** Forecast table. Click a row to open the traceability drawer. */
 export function WeekTable({
   weeks,
   onPick,
@@ -52,7 +52,7 @@ export function WeekTable({
                   )}
                 </div>
                 <div className="mt-0.5 text-2xs text-ink-faint tnum">
-                  {w.expectedRainWorkdays} rain workdays
+                  {w.weatherRiskValue} {w.weatherRiskBasis}
                 </div>
               </Td>
               <Td right>{eur(w.forecastCashIn)}</Td>

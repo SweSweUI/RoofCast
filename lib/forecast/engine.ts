@@ -48,7 +48,11 @@ export function computeCompanyForecast(input: ForecastInput): ForecastResult {
   const start = params.startWeek;
 
   const profile = buildSeasonalProfile(history, params.baselineLookbackWeeks);
-  const wx = buildWeatherSeries(weather, start, H, params.weatherIntensity);
+  const wx = buildWeatherSeries(weather, start, H, params.weatherIntensity, {
+    weatherRiskMode: params.weatherRiskMode,
+    weatherMediumThreshold: params.weatherMediumThreshold,
+    weatherHighThreshold: params.weatherHighThreshold,
+  });
 
   // index w: 1 = startWeek (current week). week key = addWeeksKey(start, w-1).
   const keyOf = (w: number): WeekKey => addWeeksKey(start, w - 1);
@@ -129,7 +133,7 @@ export function computeCompanyForecast(input: ForecastInput): ForecastResult {
   const cashCov = covenants.find(
     (c) => c.metric === 'min_cash_balance' && c.companyId === company.id,
   );
-  const threshold = cashCov?.threshold ?? null;
+  const threshold = params.covenantFloorOverride ?? cashCov?.threshold ?? null;
 
   // --- assemble weeks ------------------------------------------------------
   const weeks: ForecastWeek[] = [];
@@ -179,6 +183,8 @@ export function computeCompanyForecast(input: ForecastInput): ForecastResult {
       isLiveWeather: item.isLive,
       weatherSource: item.source,
       expectedRainWorkdays: item.expectedRainWorkdays,
+      weatherRiskBasis: item.riskBasis,
+      weatherRiskValue: item.riskValue,
       weatherRisk: item.risk,
       delayScore: item.delayScore,
       baselineProduction: r0(baseProd.get(w) ?? 0),
@@ -260,11 +266,11 @@ function buildExplanation(a: {
   const live = a.item.isLive ? 'live Open-Meteo forecast' : 'seasonal climatology';
   if (a.item.risk === 'low') {
     parts.push(
-      `Weather: ${a.item.expectedRainWorkdays} expected rain workdays (${live}) → low delay risk.`,
+      `Weather: ${a.item.riskValue} ${a.item.riskBasis} (${live}) → low delay risk.`,
     );
   } else {
     parts.push(
-      `Weather: ${a.item.expectedRainWorkdays} expected rain workdays (${live}) → ${a.item.risk} delay risk; ` +
+      `Weather: ${a.item.riskValue} ${a.item.riskBasis} (${live}) → ${a.item.risk} delay risk; ` +
         `${eur(a.shiftOut)} of this week's billing shifted to weeks +${a.catchUpStartLag}…+${a.catchMax}.`,
     );
   }
@@ -308,7 +314,7 @@ function buildTrace(a: {
       driver: 'weather_delay',
       contributionAmount: r0(a.weatherAdj),
       adjustmentReason:
-        `${a.item.expectedRainWorkdays} expected rain workdays → ${a.item.risk} delay risk ` +
+        `${a.item.riskValue} ${a.item.riskBasis} → ${a.item.risk} delay risk ` +
         `(${a.item.isLive ? 'live forecast' : 'seasonal'}). Timing shift of work/billing into ` +
         `weeks +${a.params.catchUpStartLag}…+${a.catchMax}; suggestive signal, not causal (p≈0.065).`,
     });

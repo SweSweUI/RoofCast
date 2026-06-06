@@ -19,7 +19,8 @@ import { WeekTable } from '@/components/WeekTable';
 import { TracePanel } from '@/components/TracePanel';
 import { WeatherCalendar } from '@/components/charts/WeatherCalendar';
 import type { WeatherCell } from '@/components/charts/WeatherCalendar';
-import type { ForecastWeek, RiskLevel } from '@/lib/types';
+import { WeatherApi167Panel } from '@/components/WeatherApi167Panel';
+import type { ForecastWeek, RiskLevel, WeatherApi167Detail } from '@/lib/types';
 
 // ─── Weather API shape ───────────────────────────────────────────────────────
 
@@ -37,6 +38,7 @@ interface WeatherResponse {
   company: { code: string; name: string; location: string };
   series: WeatherSeries[];
   recentHistory: WeatherSeries[];
+  weatherApi167: WeatherApi167Detail | null;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -140,6 +142,13 @@ export default function ProjectPage() {
         ) : (
           <WeatherCalendar series={weatherSeries} onPick={setWeek} activeWeek={week ?? undefined} />
         )}
+      </Card>
+
+      <Card
+        title="Live site weather detail"
+        subtitle="Weather API 167 adds current conditions, hourly probability, daily condition, and air quality."
+      >
+        <WeatherApi167Panel detail={weatherApi.data?.weatherApi167} loading={weatherApi.loading} />
       </Card>
 
       {/* ── 3. Upcoming bad-weather windows ──────────────────────────── */}

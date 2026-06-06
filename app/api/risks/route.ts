@@ -39,7 +39,7 @@ export async function GET(req: Request) {
     // covenant floor
     const cov = result.covenants.find((c) => c.metric === 'min_cash_balance')
       ?? result.covenants.find((c) => c.metric === 'min_13w_liquidity');
-    const threshold = cov?.threshold ?? null;
+    const threshold = result.params.covenantFloorOverride ?? cov?.threshold ?? null;
 
     // reconciliation variance (only Opco A has a monthly summary)
     const inv = await getInventory();
@@ -63,7 +63,7 @@ export async function GET(req: Request) {
       const prior = mean(h.slice(-26, -8).map((x) => x.creditTotal));
       if (prior > 0) {
         const pct = (recent - prior) / prior;
-        if (pct < -0.03) underperformers.push({ name: c.shortName, pct, eur: (recent - prior) * 13 });
+        if (pct < -0.03) underperformers.push({ name: c.shortName, pct, eur: (recent - prior) * result.weeks.length });
       }
     }
 

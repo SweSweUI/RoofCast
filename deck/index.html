@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Altis — One-Canvas Zoom Deck</title>
+<style>
+/* ============================================================
+   Altis — single infinite canvas, Prezi-style zoom.
+   One "slide": the whole story is laid out in world-space.
+   Click a section to zoom in · scroll to zoom · drag to pan ·
+   arrows for the guided tour · Esc/Home for the overview.
+   Palette matches the app (slate + teal).
+   ============================================================ */
+:root{
+  --ink:#0f172a; --ink-soft:#1e293b; --ink-muted:#475569; --ink-faint:#94a3b8;
+  --panel:#ffffff; --sunken:#f8fafc; --line:#e2e8f0;
+  --accent:#0d9488; --accent-soft:#ccfbf1; --accent-deep:#0f766e;
+  --low:#15803d; --medium:#b45309; --high:#b91c1c;
+  --low-bg:#dcfce7; --medium-bg:#fef3c7; --high-bg:#fee2e2;
+  --cashin:#0d9488; --cashout:#64748b;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{
+  font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:#070c16; color:var(--ink); -webkit-font-smoothing:antialiased;
+  font-variant-numeric:tabular-nums;
+}
+
+/* ---- stage / world ---- */
+.stage{position:fixed;inset:0;overflow:hidden;cursor:grab;
+  background:radial-gradient(120% 90% at 50% 0%,#0f2330 0%,#0a121f 45%,#070c16 100%)}
+.stage.grabbing{cursor:grabbing}
+.world{position:absolute;top:0;left:0;width:6400px;height:5240px;transform-origin:0 0}
+.world.glide{transition:transform 1s cubic-bezier(.45,.05,.15,1)}
+.links{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
+
+/* ---- panels ---- */
+.panel{position:absolute;background:#fff;border:2px solid var(--line);border-radius:32px;
+  box-shadow:0 40px 120px rgba(0,0,0,.45);padding:54px 60px;overflow:hidden;
+  display:flex;flex-direction:column;cursor:pointer;transition:box-shadow .3s,border-color .3s}
+.panel:hover{border-color:#5eead4;box-shadow:0 40px 120px rgba(13,148,136,.4)}
+.panel.focused{cursor:default}
+.badge{position:absolute;top:30px;right:38px;font-size:34px;font-weight:800;color:var(--ink-faint);
+  background:var(--sunken);border:2px solid var(--line);border-radius:16px;padding:6px 18px;letter-spacing:1px}
+
+.pk{font-size:30px;font-weight:700;letter-spacing:5px;text-transform:uppercase;color:var(--accent-deep);
+  display:flex;align-items:center;gap:14px}
+.pk .d{width:14px;height:14px;border-radius:99px;background:var(--accent);box-shadow:0 0 0 7px var(--accent-soft)}
+.ph{font-size:82px;font-weight:800;letter-spacing:-2.5px;line-height:1.02;margin-top:22px;color:var(--ink)}
+.ph .ac{color:var(--accent-deep)}
+.pb{font-size:36px;color:var(--ink-muted);line-height:1.45}
+.pb b{color:var(--ink);font-weight:700}
+.ps{font-size:28px;color:var(--ink-faint);line-height:1.4}
+.spacer{flex:1}
+
+/* number style */
+.pnum{font-size:128px;font-weight:800;letter-spacing:-4px;line-height:1;color:var(--ink)}
+.pnum .u{color:var(--accent-deep)}
+.plbl{font-size:30px;color:var(--ink-muted);margin-top:12px;line-height:1.3}
+
+/* chips / pills */
+.pchip{display:inline-flex;align-items:center;gap:12px;font-size:30px;font-weight:600;
+  padding:16px 26px;border-radius:18px;background:#fff;border:2px solid var(--line);color:var(--ink-soft);
+  box-shadow:0 8px 24px rgba(15,23,42,.06)}
+.pchip .i{color:var(--accent-deep);font-weight:800}
+.ppill{display:inline-flex;align-items:center;gap:12px;font-size:26px;font-weight:700;padding:10px 22px;
+  border-radius:99px;border:2px solid var(--line);background:#fff;color:var(--ink-soft)}
+.ppill.live{color:var(--accent-deep);border-color:#5eead4;background:var(--accent-soft)}
+.ppill.live .dot{width:13px;height:13px;border-radius:99px;background:var(--accent);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(13,148,136,.5)}50%{box-shadow:0 0 0 11px rgba(13,148,136,0)}}
+
+/* mini cards */
+.pcard{background:#fff;border:2px solid var(--line);border-radius:22px;padding:30px 32px;box-shadow:0 10px 30px rgba(15,23,42,.05)}
+.pcard h4{font-size:38px;font-weight:700;margin-bottom:10px}
+.pcard p{font-size:28px;color:var(--ink-muted);line-height:1.4}
+
+.row{display:flex;gap:36px}
+.col{display:flex;flex-direction:column;gap:28px}
+.grid{display:grid;gap:28px}
+
+/* ---- HERO ---- */
+#n-hero{background:radial-gradient(130% 130% at 80% -10%,#0f766e 0%,#0f172a 52%,#0b1220 100%);
+  border-color:rgba(94,234,212,.25);justify-content:center}
+#n-hero .ph{color:#fff;font-size:150px}
+#n-hero .pb{color:#cbd5e1}
+#n-hero .pk{color:#5eead4}#n-hero .pk .d{background:#5eead4}
+#n-hero .ppill{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.2);color:#a7f3d0}
+#n-hero .hlogo{width:118px;height:118px;border-radius:28px;background:#fff;color:#0f766e;display:grid;place-items:center;
+  font-weight:900;font-size:74px;box-shadow:0 16px 60px rgba(45,212,191,.4)}
+#n-hero .hstat{font-size:64px;font-weight:800;color:#fff}
+#n-hero .hstat .u{color:#5eead4}
+#n-hero .hstat .l{font-size:26px;font-weight:600;color:#94a3b8;display:block;margin-top:6px}
+.explore{font-size:28px;color:#5eead4;font-weight:600;display:inline-flex;align-items:center;gap:12px}
+
+/* ---- chain (insight) ---- */
+.chain{display:flex;align-items:stretch;margin-top:14px}
+.pnode{flex:1;background:#fff;border:2px solid var(--line);border-radius:24px;padding:34px 24px;text-align:center;
+  box-shadow:0 14px 36px rgba(15,23,42,.07)}
+.pnode .ic{width:80px;height:80px;border-radius:22px;display:grid;place-items:center;margin:0 auto 18px;
+  background:var(--accent-soft);font-size:42px}
+.pnode h4{font-size:36px;font-weight:700}
+.pnode p{font-size:25px;color:var(--ink-muted);margin-top:10px;line-height:1.3}
+.conn{flex:0 0 76px;position:relative;display:grid;place-items:center;color:var(--ink-faint)}
+.conn::before{content:"";position:absolute;top:50%;left:0;right:0;height:4px;background:var(--line)}
+.conn svg{width:46px;height:46px;position:relative}
+.conn .spark{position:absolute;top:50%;left:0;width:22px;height:22px;margin-top:-11px;border-radius:99px;
+  background:var(--accent);box-shadow:0 0 22px 5px rgba(13,148,136,.7);opacity:0}
+.panel.focused .conn .spark{animation:travel 2.4s linear infinite}
+.panel.focused .conn:nth-of-type(4) .spark{animation-delay:.4s}
+.panel.focused .conn:nth-of-type(6) .spark{animation-delay:.8s}
+@keyframes travel{0%{left:-10px;opacity:0}12%{opacity:1}88%{opacity:1}100%{left:72px;opacity:0}}
+
+.honest{display:flex;gap:18px;align-items:flex-start;background:#fffbeb;border:2px solid #fde68a;border-radius:20px;
+  padding:24px 30px;font-size:28px;color:#92400e;line-height:1.4}
+.honest .ic{font-size:34px;flex:0 0 auto}
+
+/* ---- model layers ---- */
+.layer{display:flex;align-items:center;gap:28px;background:#fff;border:2px solid var(--line);
+  border-left:8px solid var(--accent);border-radius:18px;padding:22px 30px;box-shadow:0 8px 22px rgba(15,23,42,.05)}
+.layer .n{flex:0 0 56px;height:56px;border-radius:14px;background:var(--ink);color:#fff;display:grid;place-items:center;
+  font-weight:800;font-size:32px}
+.layer .t{font-weight:700;font-size:34px}
+.layer .d{font-size:26px;color:var(--ink-muted);margin-top:2px}
+
+/* ---- scenario bars ---- */
+.scwrap{display:grid;grid-template-columns:repeat(3,1fr);gap:40px;align-items:end}
+.barbox{height:360px;display:flex;align-items:flex-end;justify-content:center;gap:20px;
+  border-bottom:4px solid var(--line);border-radius:14px 14px 0 0;background:linear-gradient(180deg,#fff,transparent)}
+.pbar{width:74px;border-radius:12px 12px 0 0;height:0;transition:height 1.2s cubic-bezier(.22,.61,.36,1) var(--bd,.2s)}
+.panel.focused .pbar{height:var(--h)}
+.pbar.cin{background:linear-gradient(180deg,#14b8a6,#0d9488)}
+.pbar.cout{background:linear-gradient(180deg,#94a3b8,#64748b)}
+.sccap{text-align:center;margin-top:18px}
+.sccap .l{font-weight:800;font-size:36px}
+.sccap .i{font-size:27px;font-weight:700;margin-top:4px}
+.sccap .s{font-size:24px;color:var(--ink-muted)}
+
+/* ---- risk cards ---- */
+.risks{display:grid;grid-template-columns:repeat(4,1fr);gap:24px}
+.risk{background:#fff;border:2px solid var(--line);border-top:8px solid var(--line);border-radius:20px;
+  padding:26px 28px;box-shadow:0 8px 22px rgba(15,23,42,.05)}
+.risk.low{border-top-color:var(--low)}.risk.med{border-top-color:var(--medium)}.risk.high{border-top-color:var(--high)}
+.risk .lv{font-size:22px;font-weight:800;letter-spacing:1px;text-transform:uppercase;padding:6px 16px;border-radius:9px;display:inline-block}
+.risk.low .lv{background:var(--low-bg);color:var(--low)}
+.risk.med .lv{background:var(--medium-bg);color:var(--medium)}
+.risk.high .lv{background:var(--high-bg);color:var(--high)}
+.risk h4{font-size:32px;font-weight:700;margin:16px 0 8px}
+.risk p{font-size:24px;color:var(--ink-muted);line-height:1.35}
+.risk .imp{font-size:27px;font-weight:700;color:var(--ink);margin-top:12px}
+
+/* ---- role tiles ---- */
+.roles{display:grid;grid-template-columns:repeat(5,1fr);gap:24px}
+.role{background:#fff;border:2px solid var(--line);border-radius:20px;padding:28px;box-shadow:0 8px 22px rgba(15,23,42,.05)}
+.role .ic{width:62px;height:62px;border-radius:16px;background:var(--ink);color:#fff;display:grid;place-items:center;
+  font-size:32px;margin-bottom:18px}
+.role.alt .ic{background:var(--accent-deep)}
+.role h4{font-size:32px;font-weight:700}
+.role p{font-size:24px;color:var(--ink-muted);margin-top:8px;line-height:1.3}
+
+/* ---- trace steps ---- */
+.trace{display:flex;flex-direction:column;gap:18px}
+.tstep{display:flex;align-items:center;gap:24px;background:#fff;border:2px solid var(--line);border-radius:18px;
+  padding:22px 30px;box-shadow:0 8px 22px rgba(15,23,42,.05)}
+.tstep .tag{font-size:24px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--accent-deep);
+  background:var(--accent-soft);padding:8px 18px;border-radius:11px;flex:0 0 auto}
+.tstep .tx{font-size:30px;color:var(--ink-soft)}
+.tstep .v{margin-left:auto;font-weight:800;font-size:30px}
+
+/* ---- frame for screenshots ---- */
+.frame{border-radius:22px;overflow:hidden;border:2px solid var(--line);background:#fff;
+  box-shadow:0 30px 80px rgba(15,23,42,.25);display:flex;flex-direction:column}
+.frame .bar{height:52px;flex:0 0 52px;display:flex;align-items:center;gap:12px;padding:0 24px;background:#f1f5f9;border-bottom:2px solid var(--line)}
+.frame .bar i{width:16px;height:16px;border-radius:99px;background:#cbd5e1}
+.frame .bar .url{margin-left:16px;font-size:24px;color:var(--ink-faint);background:#fff;border:2px solid var(--line);border-radius:10px;padding:6px 20px}
+.shot{position:relative;overflow:hidden;flex:1}
+.shot img{width:100%;display:block;position:absolute;top:0;left:0}
+.panel.focused .shot.scroll img{animation:pan 16s ease-in-out infinite alternate}
+@keyframes pan{0%{transform:translateY(0)}100%{transform:translateY(calc(-100% + var(--wh,460px)))}}
+
+/* ---- map ---- */
+.mapbox{position:relative;flex:1;background:#eef6f5;border:2px solid var(--line);border-radius:24px;overflow:hidden;
+  background-image:radial-gradient(circle at 2px 2px,rgba(13,148,136,.14) 2px,transparent 0);background-size:54px 54px}
+.mk{position:absolute;transform:translate(-50%,-50%);text-align:center}
+.mk .dot{width:34px;height:34px;border-radius:99px;margin:0 auto;position:relative;border:5px solid #fff;box-shadow:0 4px 14px rgba(0,0,0,.3)}
+.mk .dot::after{content:"";position:absolute;inset:-10px;border-radius:99px;border:4px solid currentColor;opacity:.6}
+.panel.focused .mk .dot::after{animation:ping 2.4s ease-out infinite}
+@keyframes ping{0%{transform:scale(.7);opacity:.7}100%{transform:scale(2.6);opacity:0}}
+.mk.high .dot{background:var(--high);color:var(--high)}
+.mk.med .dot{background:var(--medium);color:var(--medium)}
+.mk.low .dot{background:var(--low);color:var(--low)}
+.mk .nm{font-size:25px;font-weight:700;margin-top:10px;background:rgba(255,255,255,.9);padding:6px 14px;border-radius:9px;white-space:nowrap}
+.legend{position:absolute;bottom:26px;left:26px;background:rgba(255,255,255,.94);border:2px solid var(--line);
+  border-radius:16px;padding:18px 24px;font-size:25px;display:flex;flex-direction:column;gap:10px}
+.legend i{width:18px;height:18px;border-radius:99px;display:inline-block;margin-right:12px;vertical-align:middle}
+
+/* ---- iOS phones ---- */
+.phones{display:flex;gap:50px;justify-content:center;align-items:center;flex:1;perspective:2600px}
+.iphone{width:330px;border-radius:54px;background:#0f172a;padding:14px;box-shadow:0 40px 90px rgba(0,0,0,.4);
+  position:relative;transform:rotateY(16deg)}
+.iphone:nth-child(2){transform:rotateY(-16deg)}
+.iphone .notch{position:absolute;top:22px;left:50%;transform:translateX(-50%);width:120px;height:28px;background:#0f172a;border-radius:0 0 18px 18px;z-index:3}
+.iphone img{width:100%;border-radius:42px;display:block}
+
+/* ---- agent chat ---- */
+.chat{display:flex;flex-direction:column;gap:26px}
+.bub{border-radius:24px;padding:28px 34px;font-size:31px;line-height:1.4;box-shadow:0 10px 30px rgba(15,23,42,.08);max-width:88%}
+.bub.q{align-self:flex-end;background:var(--ink);color:#fff;border-bottom-right-radius:8px}
+.bub.a{align-self:flex-start;background:#fff;border:2px solid var(--line);border-bottom-left-radius:8px}
+.bub.a .tt{font-weight:800;margin-bottom:10px}
+.bub.a ul{margin:8px 0 12px 34px;color:var(--ink-soft)}
+.bub.a li{font-size:28px;margin:6px 0}
+.srcs{display:flex;gap:12px;flex-wrap:wrap}
+.src{font-size:22px;font-weight:700;color:var(--accent-deep);background:var(--accent-soft);border-radius:9px;padding:8px 16px}
+
+/* ---- tech stack ---- */
+.stack{display:grid;grid-template-columns:repeat(3,1fr);gap:26px}
+.sgrp{background:#fff;border:2px solid var(--line);border-radius:20px;padding:26px 30px;box-shadow:0 8px 22px rgba(15,23,42,.05)}
+.sgrp .gh{font-size:24px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--accent-deep);margin-bottom:16px}
+.sgrp .it{display:flex;flex-wrap:wrap;gap:12px}
+.tg{font-size:27px;font-weight:600;background:var(--sunken);border:2px solid var(--line);border-radius:12px;padding:9px 18px;color:var(--ink-soft)}
+.flow{display:flex;align-items:center;gap:16px;flex-wrap:wrap;justify-content:center;font-size:27px;margin-top:8px}
+.flow .f{background:#fff;border:2px solid var(--line);border-radius:12px;padding:12px 22px;font-weight:700;color:var(--ink-soft)}
+.flow .ar{color:var(--accent);font-size:34px}
+
+/* impact closer */
+#n-impact{background:radial-gradient(130% 130% at 15% 120%,#0f766e 0%,#0f172a 58%,#0b1220 100%);border-color:rgba(94,234,212,.25)}
+#n-impact .ph,#n-impact .pnum{color:#fff}
+#n-impact .pnum .u{color:#5eead4}
+#n-impact .plbl{color:#94a3b8}
+#n-impact .pk{color:#5eead4}#n-impact .pk .d{background:#5eead4}
+#n-impact .it2{border-left:5px solid var(--accent);padding-left:28px}
+#n-impact .pb{color:#cbd5e1}
+#n-impact .acct{font-family:ui-monospace,Menlo,monospace;font-size:26px;color:#a7f3d0;background:rgba(255,255,255,.08);
+  border:2px solid rgba(255,255,255,.18);border-radius:12px;padding:10px 20px}
+
+/* ---- chrome ---- */
+.bar-top{position:fixed;top:0;left:0;height:5px;z-index:60;background:linear-gradient(90deg,var(--accent),#22d3ee);width:0;
+  transition:width .9s ease;box-shadow:0 0 16px rgba(13,148,136,.7)}
+.hud{position:fixed;z-index:50;color:#cbd5e1}
+.hud.tl{top:18px;left:20px;display:flex;gap:10px;align-items:center}
+.hud.br{bottom:16px;right:22px;font-size:14px;color:#64748b}
+.hud.bc{bottom:14px;left:50%;transform:translateX(-50%);font-size:13px;color:#64748b;display:flex;gap:10px;align-items:center}
+.btn{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);
+  color:#e2e8f0;border-radius:10px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;backdrop-filter:blur(8px)}
+.btn:hover{background:rgba(255,255,255,.14);color:#fff}
+.brand{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:600;color:#cbd5e1;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:7px 13px}
+.brand .a{width:22px;height:22px;border-radius:6px;background:#fff;color:#0f766e;display:grid;place-items:center;font-weight:900;font-size:13px}
+.title-now{font-size:13px;font-weight:700;color:#fff}
+kbd{font-family:ui-monospace,Menlo,monospace;font-size:11px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);
+  border-radius:5px;padding:1px 6px;color:#cbd5e1}
+.nav-arrows{position:fixed;z-index:55;bottom:54px;right:22px;display:flex;gap:8px}
+.na{width:46px;height:46px;border-radius:99px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);
+  color:#e2e8f0;display:grid;place-items:center;cursor:pointer;backdrop-filter:blur(8px)}
+.na:hover{background:rgba(255,255,255,.16);color:#fff}.na svg{width:22px;height:22px}
+</style>
+</head>
+<body>
+<div class="bar-top" id="bartop"></div>
+
+<div class="stage" id="stage">
+  <div class="world glide" id="world">
+    <svg class="links" id="links"></svg>
+
+    <!-- HERO -->
+    <section class="panel" id="n-hero" data-node="hero" style="left:1740px;top:150px;width:2920px;height:600px">
+      <div class="row" style="align-items:center;gap:40px">
+        <div class="hlogo">A</div>
+        <div class="pk"><span class="d"></span>Altis Groep · PE-backed roofing portfolio</div>
+      </div>
+      <div class="ph">Weather-Aware<br>13-Week Cashflow Platform</div>
+      <div class="pb" style="margin-top:18px">How will cash move over the next 13 weeks — and how does the weather delay billing and tighten covenant headroom?</div>
+      <div class="spacer"></div>
+      <div class="row" style="align-items:flex-end;justify-content:space-between">
+        <div class="row" style="gap:54px">
+          <div class="hstat">4<span class="l">operating companies</span></div>
+          <div class="hstat">4<span class="l">accounting systems</span></div>
+          <div class="hstat">1<span class="l">reconciled model</span></div>
+          <div class="hstat">13<span class="u">wk</span><span class="l">cash horizon</span></div>
+        </div>
+        <div class="explore">↘ Click any section to zoom in</div>
+      </div>
+    </section>
+
+    <!-- PROBLEM -->
+    <section class="panel" id="n-problem" data-node="problem" style="left:320px;top:900px;width:1320px;height:840px">
+      <div class="badge">01</div>
+      <div class="pk"><span class="d"></span>The problem</div>
+      <div class="ph">The CFO can't<br>answer one<br>question</div>
+      <div class="pb" style="font-style:italic;color:var(--ink-soft);margin-top:18px">“How much cash will be in the account in eight weeks?”</div>
+      <div class="spacer"></div>
+      <div class="col" style="gap:18px">
+        <div class="pchip"><span class="i">▸</span> 4 opcos · 4 accounting systems</div>
+        <div class="pchip"><span class="i">▸</span> Billing slips when it rains</div>
+        <div class="pchip"><span class="i">▸</span> ~4 weeks of debtor lag · fixed covenant floors</div>
+      </div>
+      <div class="ps" style="margin-top:22px">Cash arrives late exactly when liquidity is tightest.</div>
+    </section>
+
+    <!-- INSIGHT (chain) -->
+    <section class="panel" id="n-insight" data-node="insight" style="left:1820px;top:860px;width:2760px;height:920px">
+      <div class="badge">02</div>
+      <div class="pk"><span class="d"></span>The insight</div>
+      <div class="ph">Bad weather doesn't destroy revenue — it <span class="ac">delays cash</span></div>
+      <div class="chain">
+        <div class="pnode"><div class="ic">🌧️</div><h4>Weather risk</h4><p>3+ rain workdays = high delay risk</p></div>
+        <div class="conn"><div class="spark"></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+        <div class="pnode"><div class="ic">🏗️</div><h4>Work delay</h4><p>Execution &amp; milestones slip</p></div>
+        <div class="conn"><div class="spark"></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+        <div class="pnode"><div class="ic">🧾</div><h4>Billing delay</h4><p>Invoices 3–5 weeks later</p></div>
+        <div class="conn"><div class="spark"></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+        <div class="pnode"><div class="ic">💶</div><h4>Cash-in delay</h4><p>Via ~4-week payment terms</p></div>
+      </div>
+      <div class="spacer"></div>
+      <div class="honest"><span class="ic">⚠</span><div><b>Suggestive, not causal.</b> Strongest Pearson |r| ≈ 0.17–0.22, permutation p ≈ 0.07–0.19. Used only to shift the <b>timing</b> of projected billing — never to predict lost revenue.</div></div>
+    </section>
+
+    <!-- DATA -->
+    <section class="panel" id="n-data" data-node="data" style="left:4760px;top:900px;width:1320px;height:840px">
+      <div class="badge">03</div>
+      <div class="pk"><span class="d"></span>Foundation · data</div>
+      <div class="ph">4 systems →<br>1 model</div>
+      <div class="col" style="gap:14px;margin-top:24px">
+        <div class="row" style="flex-wrap:wrap;gap:12px">
+          <span class="ppill">Snelstart</span><span class="ppill">Exact GL</span><span class="ppill">Gilde</span><span class="ppill">Invoice register</span>
+        </div>
+        <div class="row" style="gap:40px;margin-top:14px">
+          <div><div class="pnum" style="font-size:78px"><span data-count="32278">0</span></div><div class="plbl">transactions after dedup</div></div>
+          <div><div class="pnum" style="font-size:78px"><span data-count="4616">0</span></div><div class="plbl">duplicate rows removed</div></div>
+        </div>
+      </div>
+      <div class="spacer"></div>
+      <div class="honest"><span class="ic">✓</span><div>Validation anchor: deduped Peter Ummels = <b>9,958 tx / €36.67M net</b> — matches the prior analysis exactly.</div></div>
+    </section>
+
+    <!-- MODEL -->
+    <section class="panel" id="n-model" data-node="model" style="left:320px;top:1900px;width:1320px;height:980px">
+      <div class="badge">04</div>
+      <div class="pk"><span class="d"></span>Forecast engine</div>
+      <div class="ph" style="font-size:64px">A 6-layer forecast</div>
+      <div class="col" style="gap:14px;margin-top:22px">
+        <div class="layer"><div class="n">1</div><div><div class="t">Baseline run-rate</div><div class="d">8-wk rolling median + ISO-week seasonality</div></div></div>
+        <div class="layer"><div class="n">2</div><div><div class="t">Driver decomposition</div><div class="d">Materials 32 · sub 18 · labour 22 · overhead 10 %</div></div></div>
+        <div class="layer"><div class="n">3</div><div><div class="t">Weather timing shift</div><div class="d">High 25% deferred · medium 12% · later catch-up</div></div></div>
+        <div class="layer"><div class="n">4</div><div><div class="t">Payment-lag cash-in</div><div class="d">Spread t+2…t+8, peak ≈ t+4</div></div></div>
+        <div class="layer"><div class="n">5</div><div><div class="t">Scenarios</div><div class="d">Base / wet / dry — intensity 1.0 / 1.5 / 0.5</div></div></div>
+        <div class="layer"><div class="n">6</div><div><div class="t">Covenant headroom + trace</div><div class="d">Closing cash vs floor, a trace behind every number</div></div></div>
+      </div>
+      <div class="ps" style="margin-top:18px">Pure TypeScript function · runs on every page load · <b style="color:var(--ink)">15 tests green</b>.</div>
+    </section>
+
+    <!-- SCENARIOS -->
+    <section class="panel" id="n-scenarios" data-node="scenarios" style="left:1820px;top:1960px;width:1320px;height:860px">
+      <div class="badge">05</div>
+      <div class="pk"><span class="d"></span>Scenario analysis</div>
+      <div class="ph" style="font-size:62px">Base · Wet · Dry</div>
+      <div class="scwrap" style="margin-top:24px">
+        <div><div class="barbox"><div class="pbar cin" style="--h:230px;--bd:.3s"></div><div class="pbar cout" style="--h:185px;--bd:.45s"></div></div><div class="sccap"><div class="l">Base</div><div class="i" style="color:var(--accent-deep)">1.0</div><div class="s">live + seasonal</div></div></div>
+        <div><div class="barbox"><div class="pbar cin" style="--h:165px;--bd:.55s"></div><div class="pbar cout" style="--h:185px;--bd:.7s"></div></div><div class="sccap"><div class="l">Wet</div><div class="i" style="color:var(--high)">1.5</div><div class="s">cash shifts out</div></div></div>
+        <div><div class="barbox"><div class="pbar cin" style="--h:265px;--bd:.8s"></div><div class="pbar cout" style="--h:185px;--bd:.95s"></div></div><div class="sccap"><div class="l">Dry</div><div class="i" style="color:var(--low)">0.5</div><div class="s">cash earlier</div></div></div>
+      </div>
+      <div class="spacer"></div>
+      <div class="honest" style="background:var(--high-bg);border-color:#fecaca;color:#991b1b"><span class="ic">≈</span><div><b>~€281k of billing</b> is pushed beyond the 13-week horizon in the wet quarter — tracked as spillover, not lost. Timing shifts; volume doesn't.</div></div>
+    </section>
+
+    <!-- RISKS -->
+    <section class="panel" id="n-risks" data-node="risks" style="left:3320px;top:1900px;width:2760px;height:980px">
+      <div class="badge">06</div>
+      <div class="pk"><span class="d"></span>Risk engine</div>
+      <div class="ph">8 weather-to-cash risk signals</div>
+      <div class="ps" style="margin-top:10px">Each: level · EUR impact · confidence · plain-English reason · trace to source.</div>
+      <div class="risks" style="margin-top:24px">
+        <div class="risk med"><span class="lv">Medium</span><h4>Weather Billing</h4><p>Rain defers billing timing</p><div class="imp">timing shift</div></div>
+        <div class="risk med"><span class="lv">Medium</span><h4>Cash-In Delay</h4><p>Debtor terms push cash later</p><div class="imp">~4-week lag</div></div>
+        <div class="risk low"><span class="lv">Low</span><h4>Payment Terms</h4><p>Spread t+2…t+8 modelled</p><div class="imp">assumption</div></div>
+        <div class="risk high"><span class="lv">High</span><h4>Cash-Out Assumption</h4><p>No cost ledger — costs configured</p><div class="imp">honest, not a flaw</div></div>
+        <div class="risk high"><span class="lv">High</span><h4>Covenant Headroom</h4><p>Closing cash vs floor (Opco C)</p><div class="imp">€-impact</div></div>
+        <div class="risk low"><span class="lv">Low</span><h4>Data Quality</h4><p>Dedup + reconciliation passed</p><div class="imp">26 files</div></div>
+        <div class="risk med"><span class="lv">Medium</span><h4>Forecast Confidence</h4><p>Per-week confidence rating</p><div class="imp">weak signal flagged</div></div>
+        <div class="risk med"><span class="lv">Medium</span><h4>Opco Underperformance</h4><p>Below portfolio run-rate</p><div class="imp">comparison</div></div>
+      </div>
+    </section>
+
+    <!-- ROLES -->
+    <section class="panel" id="n-roles" data-node="roles" style="left:320px;top:3060px;width:2760px;height:840px">
+      <div class="badge">07</div>
+      <div class="pk"><span class="d"></span>Role dashboards</div>
+      <div class="ph">The right view for every stakeholder</div>
+      <div class="roles" style="margin-top:24px">
+        <div class="role"><div class="ic">€</div><h4>CFO</h4><p>13-wk cash, 8 risks, scenarios, trace</p></div>
+        <div class="role"><div class="ic">⬡</div><h4>PE Board</h4><p>Portfolio, covenants, at-risk</p></div>
+        <div class="role"><div class="ic">⌂</div><h4>Opco MD</h4><p>Weather calendar, ops actions</p></div>
+        <div class="role"><div class="ic">⚒</div><h4>Project Lead</h4><p>Bad-weather windows, shifts</p></div>
+        <div class="role alt"><div class="ic">⌖</div><h4>Map</h4><p>Locations + weather risk</p></div>
+        <div class="role alt"><div class="ic">✦</div><h4>Agent</h4><p>Ask the forecast</p></div>
+        <div class="role alt"><div class="ic">⇄</div><h4>API</h4><p>Exact · Snelstart · Gilde</p></div>
+        <div class="role"><div class="ic">◷</div><h4>Data Quality</h4><p>Lineage &amp; dedup</p></div>
+        <div class="role"><div class="ic">∑</div><h4>Methodology</h4><p>Every assumption</p></div>
+        <div class="role"><div class="ic">⚙</div><h4>Admin</h4><p>RBAC &amp; data purge</p></div>
+      </div>
+      <div class="ps" style="margin-top:18px"><b style="color:var(--ink)">5 RBAC roles</b> behind Supabase Auth — routes &amp; nav gated by middleware.</div>
+    </section>
+
+    <!-- TRACE -->
+    <section class="panel" id="n-trace" data-node="trace" style="left:3320px;top:3060px;width:1320px;height:840px">
+      <div class="badge">08</div>
+      <div class="pk"><span class="d"></span>Explainability</div>
+      <div class="ph" style="font-size:58px">Every euro traces to source</div>
+      <div class="row" style="gap:30px;margin-top:22px;flex:1">
+        <div class="trace" style="flex:1">
+          <div class="tstep"><span class="tag">Week</span><span class="tx">Closing cash</span><span class="v">€612k</span></div>
+          <div class="tstep"><span class="tag">Base</span><span class="tx">Cash-in run-rate</span><span class="v">+€180k</span></div>
+          <div class="tstep"><span class="tag">Weather</span><span class="tx">Timing shift</span><span class="v" style="color:var(--high)">−€42k</span></div>
+          <div class="tstep"><span class="tag">Drivers</span><span class="tx">Mat·sub·lab·ovh</span><span class="v">−€118k</span></div>
+          <div class="tstep"><span class="tag">Source</span><span class="tx">Txn + formula + assumption</span><span class="v">✓</span></div>
+        </div>
+        <div class="frame" style="flex:1.05">
+          <div class="bar"><i></i><i></i><i></i><span class="url">trace drawer</span></div>
+          <div class="shot"><img src="shots/trace-drawer.png" alt="Trace drawer"></div>
+        </div>
+      </div>
+      <div class="ps" style="margin-top:16px">Click any week → the trace drawer opens. <b style="color:var(--ink)">No black box.</b></div>
+    </section>
+
+    <!-- MAP -->
+    <section class="panel" id="n-map" data-node="map" style="left:4820px;top:3060px;width:1260px;height:840px">
+      <div class="badge">09</div>
+      <div class="pk"><span class="d"></span>Locations &amp; weather</div>
+      <div class="ph" style="font-size:58px">Risk on the map</div>
+      <div class="mapbox" style="margin-top:22px">
+        <div class="mk high" style="left:60%;top:62%"><div class="dot"></div><div class="nm">Ummels · Brunssum</div></div>
+        <div class="mk med" style="left:44%;top:74%"><div class="dot"></div><div class="nm">Opco C · Maastricht</div></div>
+        <div class="mk med" style="left:38%;top:48%"><div class="dot"></div><div class="nm">Opco A · proxy</div></div>
+        <div class="mk low" style="left:56%;top:34%"><div class="dot"></div><div class="nm">Company E · proxy</div></div>
+        <div class="legend"><div><i style="background:var(--high)"></i>High</div><div><i style="background:var(--medium)"></i>Medium</div><div><i style="background:var(--low)"></i>Low</div></div>
+      </div>
+      <div class="ps" style="margin-top:16px">Leaflet on web · native MapKit on iOS. Only Ummels is a real location; rest are labelled proxies.</div>
+    </section>
+
+    <!-- iOS -->
+    <section class="panel" id="n-ios" data-node="ios" style="left:320px;top:4060px;width:1320px;height:880px">
+      <div class="badge">10</div>
+      <div class="pk"><span class="d"></span>Multi-surface</div>
+      <div class="ph" style="font-size:58px">Native iOS</div>
+      <div class="phones">
+        <div class="iphone"><div class="notch"></div><img src="shots/mobile-cfo.png" alt="iOS CFO"></div>
+        <div class="iphone"><div class="notch"></div><img src="shots/mobile-board.png" alt="iOS Board"></div>
+      </div>
+      <div class="ps" style="margin-top:16px">SwiftUI + supabase-swift · same accounts, same RLS-protected tables. Check covenant headroom before a lender call.</div>
+    </section>
+
+    <!-- AGENT -->
+    <section class="panel" id="n-agent" data-node="agent" style="left:1820px;top:4060px;width:1320px;height:880px">
+      <div class="badge">11</div>
+      <div class="pk"><span class="d"></span>CFO assistant</div>
+      <div class="ph" style="font-size:54px">Ask the forecast</div>
+      <div class="chat" style="margin-top:22px">
+        <div class="bub q">Which company is most exposed to weather?</div>
+        <div class="bub a">
+          <div class="tt">Opco C (Gilde) — highest exposure</div>
+          <ul><li>Tight cash (€200k) vs €200k covenant floor</li><li>Wet quarter compresses headroom to ~zero</li></ul>
+          <div class="srcs"><span class="src">forecast_weeks</span><span class="src">weather_weekly</span><span class="src">data_inventory</span></div>
+        </div>
+      </div>
+      <div class="ps" style="margin-top:16px">Retrieval over internal data — every answer cites its sources. Not a generic chatbot.</div>
+    </section>
+
+    <!-- TECH -->
+    <section class="panel" id="n-tech" data-node="tech" style="left:3320px;top:4060px;width:1320px;height:880px">
+      <div class="badge">12</div>
+      <div class="pk"><span class="d"></span>Under the hood</div>
+      <div class="ph" style="font-size:62px">The stack</div>
+      <div class="stack" style="margin-top:24px">
+        <div class="sgrp"><div class="gh">Frontend</div><div class="it"><span class="tg">Next.js 14</span><span class="tg">TypeScript</span><span class="tg">Tailwind</span><span class="tg">Recharts</span></div></div>
+        <div class="sgrp"><div class="gh">Backend</div><div class="it"><span class="tg">Supabase</span><span class="tg">Postgres</span><span class="tg">Auth + RLS</span></div></div>
+        <div class="sgrp"><div class="gh">Local</div><div class="it"><span class="tg">SQLite</span><span class="tg">node:sqlite</span></div></div>
+        <div class="sgrp"><div class="gh">Pipeline</div><div class="it"><span class="tg">Python 3</span><span class="tg">pandas</span><span class="tg">openpyxl</span></div></div>
+        <div class="sgrp"><div class="gh">Engine</div><div class="it"><span class="tg">Pure TS</span><span class="tg">15 tests ✓</span></div></div>
+        <div class="sgrp"><div class="gh">Weather + mobile</div><div class="it"><span class="tg">Open-Meteo</span><span class="tg">SwiftUI</span><span class="tg">MapKit</span></div></div>
+      </div>
+      <div class="spacer"></div>
+      <div class="flow"><span class="f">Excel</span><span class="ar">→</span><span class="f">pipeline</span><span class="ar">→</span><span class="f">DB</span><span class="ar">→</span><span class="f">TS engine</span><span class="ar">→</span><span class="f">API</span><span class="ar">→</span><span class="f">UI + iOS</span></div>
+    </section>
+
+    <!-- IMPACT / closer -->
+    <section class="panel" id="n-impact" data-node="impact" style="left:4820px;top:4060px;width:1260px;height:880px">
+      <div class="badge" style="background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.2);color:#94a3b8">13</div>
+      <div class="pk"><span class="d"></span>Impact</div>
+      <div class="ph" style="font-size:58px">Main risk in<br>10 seconds</div>
+      <div class="grid" style="grid-template-columns:1fr 1fr;gap:28px 40px;margin-top:26px">
+        <div class="it2"><div class="pnum" style="font-size:76px"><span data-count="32278">0</span></div><div class="plbl">transactions reconciled</div></div>
+        <div class="it2"><div class="pnum" style="font-size:76px">€<span data-count="36.67" data-dec="2">0</span><span class="u">M</span></div><div class="plbl">net billing (Ummels anchor)</div></div>
+        <div class="it2"><div class="pnum" style="font-size:76px">€<span data-count="281">0</span><span class="u">k</span></div><div class="plbl">deferred in wet scenario</div></div>
+        <div class="it2"><div class="pnum" style="font-size:76px"><span data-count="15">0</span> ✓</div><div class="plbl">tests green · build passes</div></div>
+      </div>
+      <div class="spacer"></div>
+      <div class="pb" style="color:#cbd5e1">Drill <b style="color:#fff">portfolio → opco → week → source</b> in 3 clicks.</div>
+      <div class="row" style="gap:16px;margin-top:18px;flex-wrap:wrap">
+        <span class="acct">vercel deploy</span><span class="acct">cfo@altis.demo · AltisDemo!2026</span>
+      </div>
+    </section>
+
+  </div><!-- /world -->
+</div><!-- /stage -->
+
+<!-- chrome -->
+<div class="hud tl">
+  <div class="brand"><span class="a">A</span>Altis · Weather-Aware Cashflow</div>
+  <button class="btn" id="btnOverview">⤢ Overview</button>
+  <span class="title-now" id="titleNow"></span>
+</div>
+<div class="nav-arrows">
+  <button class="na" id="btnPrev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+  <button class="na" id="btnNext"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></button>
+</div>
+<div class="hud bc"><kbd>←</kbd><kbd>→</kbd> tour · <kbd>click</kbd> zoom · <kbd>scroll</kbd> zoom · <kbd>drag</kbd> pan · <kbd>Esc</kbd> overview · <kbd>F</kbd> fullscreen</div>
+<div class="hud br" id="stepHud">Overview</div>
+
+<script>
+(function(){
+  const stage=document.getElementById('stage');
+  const world=document.getElementById('world');
+  const WORLD_W=world.offsetWidth, WORLD_H=world.offsetHeight;
+  const linksSvg=document.getElementById('links');
+
+  // tour order + friendly titles
+  const PATH=['hero','problem','insight','data','model','scenarios','risks','roles','trace','map','ios','agent','tech','impact'];
+  const TITLE={hero:'Altis',problem:'The problem',insight:'The insight',data:'Data foundation',model:'Forecast engine',
+    scenarios:'Scenarios',risks:'Risk engine',roles:'Role dashboards',trace:'Traceability',map:'Map',ios:'Native iOS',
+    agent:'CFO assistant',tech:'Tech stack',impact:'Impact'};
+  const nodes={};
+  PATH.forEach(id=>{ nodes[id]=document.getElementById('n-'+id); });
+
+  // transform state (screen = world*scale + t)
+  let scale=1, tx=0, ty=0, idx=-1; // idx -1 = overview
+
+  function rectOf(id){const e=nodes[id];return {x:e.offsetLeft,y:e.offsetTop,w:e.offsetWidth,h:e.offsetHeight};}
+  function applyNow(){
+    // The world is larger than the stage, so the stage is technically scrollable;
+    // a stray scrollIntoView/focus can shift it and break the transform model. Pin it.
+    if(stage.scrollTop||stage.scrollLeft){ stage.scrollTop=0; stage.scrollLeft=0; }
+    world.style.transform=`translate(${tx}px,${ty}px) scale(${scale})`;
+  }
+  function glide(on){ world.classList.toggle('glide',on); }
+
+  function fit(r,padFrac){
+    const vw=innerWidth, vh=innerHeight, p=padFrac==null?0.06:padFrac;
+    const s=Math.min(vw/r.w, vh/r.h)*(1-p);
+    return {s, tx:vw/2-(r.x+r.w/2)*s, ty:vh/2-(r.y+r.h/2)*s};
+  }
+  function overviewView(){return fit({x:0,y:0,w:WORLD_W,h:WORLD_H},0.04);}
+  function minScale(){return overviewView().s*0.85;}
+
+  function setFocused(id){
+    Object.values(nodes).forEach(e=>e.classList.remove('focused'));
+    if(id && nodes[id]) nodes[id].classList.add('focused');
+  }
+
+  function goOverview(){
+    idx=-1; setFocused(null);
+    const v=overviewView(); glide(true); scale=v.s; tx=v.tx; ty=v.ty; applyNow();
+    document.getElementById('stepHud').textContent='Overview · '+PATH.length+' stops';
+    document.getElementById('titleNow').textContent='';
+    document.getElementById('bartop').style.width='0%';
+  }
+  function goTo(i){
+    i=Math.max(0,Math.min(PATH.length-1,i));
+    idx=i; const id=PATH[i];
+    setFocused(id);
+    countUp(nodes[id]);
+    const v=fit(rectOf(id),0.06); glide(true); scale=v.s; tx=v.tx; ty=v.ty; applyNow();
+    document.getElementById('stepHud').textContent=(i+1)+' / '+PATH.length;
+    document.getElementById('titleNow').textContent=TITLE[id];
+    document.getElementById('bartop').style.width=((i+1)/PATH.length*100)+'%';
+  }
+  function next(){ if(idx<0) goTo(0); else if(idx<PATH.length-1) goTo(idx+1); }
+  function prev(){ if(idx<0) goTo(PATH.length-1); else if(idx>0) goTo(idx-1); else goOverview(); }
+
+  // count-up
+  function countUp(scope){
+    scope.querySelectorAll('[data-count]').forEach(el=>{
+      const target=parseFloat(el.dataset.count), dec=parseInt(el.dataset.dec||'0',10), dur=1100, t0=performance.now();
+      function tick(now){
+        const p=Math.min(1,(now-t0)/dur), e=1-Math.pow(1-p,3), v=target*e;
+        el.textContent= dec>0 ? v.toFixed(dec) : Math.round(v).toLocaleString('en-US');
+        if(p<1) requestAnimationFrame(tick);
+        else el.textContent= dec>0 ? target.toFixed(dec) : Math.round(target).toLocaleString('en-US');
+      }
+      requestAnimationFrame(tick);
+    });
+  }
+
+  // ---- wheel zoom toward cursor ----
+  stage.addEventListener('wheel',e=>{
+    e.preventDefault();
+    glide(false);
+    const factor=Math.exp(-e.deltaY*0.0014);
+    let ns=Math.min(2.4, Math.max(minScale(), scale*factor));
+    const wx=(e.clientX-tx)/scale, wy=(e.clientY-ty)/scale;
+    tx=e.clientX-wx*ns; ty=e.clientY-wy*ns; scale=ns; applyNow();
+    idx=-1; document.getElementById('titleNow').textContent='';
+  },{passive:false});
+
+  // ---- drag to pan (pointer events handle ONLY panning) ----
+  let dragging=false, moved=0, sx=0, sy=0, suppressClick=false;
+  stage.addEventListener('pointerdown',e=>{
+    dragging=true; moved=0; sx=e.clientX; sy=e.clientY;
+    stage.classList.add('grabbing'); glide(false);
+  });
+  stage.addEventListener('pointermove',e=>{
+    if(!dragging) return;
+    const dx=e.clientX-sx, dy=e.clientY-sy; sx=e.clientX; sy=e.clientY;
+    moved+=Math.abs(dx)+Math.abs(dy); tx+=dx; ty+=dy; applyNow();
+  });
+  function endDrag(){ if(!dragging) return; dragging=false; stage.classList.remove('grabbing'); if(moved>=6) suppressClick=true; }
+  stage.addEventListener('pointerup',endDrag);
+  stage.addEventListener('pointercancel',endDrag);
+
+  // ---- click to zoom (works for real clicks AND programmatic .click()) ----
+  stage.addEventListener('click',e=>{
+    if(suppressClick){ suppressClick=false; return; }   // ignore the click that ends a drag
+    const panel=e.target.closest('.panel');
+    if(panel){ const i=PATH.indexOf(panel.dataset.node); if(i>=0) goTo(i); }
+    else goOverview();
+  });
+
+  // ---- keyboard ----
+  addEventListener('keydown',e=>{
+    switch(e.key){
+      case 'ArrowRight': case 'PageDown': case ' ': case 'Enter': e.preventDefault(); next(); break;
+      case 'ArrowLeft': case 'PageUp': e.preventDefault(); prev(); break;
+      case 'ArrowDown': e.preventDefault(); next(); break;
+      case 'ArrowUp': e.preventDefault(); prev(); break;
+      case 'Escape': case 'Home': e.preventDefault(); goOverview(); break;
+      case 'End': e.preventDefault(); goTo(PATH.length-1); break;
+      case '+': case '=': zoomBy(1.2); break;
+      case '-': case '_': zoomBy(1/1.2); break;
+      case 'f': case 'F':
+        if(!document.fullscreenElement) document.documentElement.requestFullscreen?.(); else document.exitFullscreen?.();
+        break;
+    }
+  });
+  function zoomBy(f){ glide(true); const cx=innerWidth/2, cy=innerHeight/2;
+    let ns=Math.min(2.4,Math.max(minScale(),scale*f)); const wx=(cx-tx)/scale, wy=(cy-ty)/scale;
+    tx=cx-wx*ns; ty=cy-wy*ns; scale=ns; applyNow(); }
+
+  // buttons
+  document.getElementById('btnOverview').addEventListener('click',e=>{e.stopPropagation();goOverview();});
+  document.getElementById('btnNext').addEventListener('click',e=>{e.stopPropagation();next();});
+  document.getElementById('btnPrev').addEventListener('click',e=>{e.stopPropagation();prev();});
+
+  // ---- draw connector path between stops (behind panels; visible in gutters) ----
+  function drawLinks(){
+    let d='';
+    for(let i=0;i<PATH.length;i++){
+      const r=rectOf(PATH[i]); const cx=r.x+r.w/2, cy=r.y+r.h/2;
+      d+=(i===0?'M':'L')+cx+' '+cy+' ';
+    }
+    linksSvg.setAttribute('viewBox','0 0 '+WORLD_W+' '+WORLD_H);
+    linksSvg.innerHTML='<path d="'+d+'" fill="none" stroke="#2dd4bf" stroke-width="6" stroke-dasharray="2 26" stroke-linecap="round" opacity="0.35"/>';
+  }
+  drawLinks();
+
+  // resize: refit current view
+  let rt; addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{ if(idx<0) goOverview(); else goTo(idx); },150);});
+
+  // start on the overview so the whole "one slide" reads at a glance
+  goOverview();
+})();
+</script>
+</body>
+</html>

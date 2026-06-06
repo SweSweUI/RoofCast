@@ -25,6 +25,9 @@ export function useForecast(company: string, scenario: Scenario, extra = ''): No
 
 export function pickThreshold(r: ForecastResult | null): { threshold: number | null; label: string } {
   if (!r) return { threshold: null, label: 'Covenant' };
+  if (r.params.covenantFloorOverride != null) {
+    return { threshold: r.params.covenantFloorOverride, label: 'Configurable warning floor' };
+  }
   const cash = r.covenants.find((c) => c.metric === 'min_cash_balance');
   const liq = r.covenants.find((c) => c.metric === 'min_13w_liquidity');
   const cov = cash ?? liq;
