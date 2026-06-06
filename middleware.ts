@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { canAccess, defaultRouteFor } from '@/lib/rbac';
 
-const DASH_SEGMENTS = ['cfo', 'board', 'map', 'agent', 'connectors', 'opco', 'project', 'data-quality', 'methodology', 'admin'];
+const DASH_SEGMENTS = ['cfo', 'board', 'map', 'agent', 'connectors', 'opco', 'project', 'data-quality', 'methodology', 'settings', 'admin'];
 
 export async function middleware(req: NextRequest) {
   let res = NextResponse.next({ request: req });

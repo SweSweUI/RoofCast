@@ -26,10 +26,12 @@ export function RealWeatherMap({
   markers,
   selectedCode,
   onSelect,
+  weekIndex = 0,
 }: {
   markers: MapCompanyMarker[];
   selectedCode: string | null;
   onSelect: (code: string) => void;
+  weekIndex?: number;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<LeafletMap | null>(null);
@@ -95,8 +97,24 @@ export function RealWeatherMap({
       const lon = marker.longitude + offset.lon;
       bounds.extend([lat, lon]);
 
+      const wk = marker.weeks?.[Math.min(weekIndex, (marker.weeks?.length ?? 1) - 1)];
+      const weekRisk: RiskLevel = wk?.risk ?? marker.weatherRisk;
+      const rainValue = wk?.rainValue ?? marker.currentWeekRainWorkdays;
       const selected = marker.code === selectedCode;
-      const color = RISK_COLOR[marker.riskLevel];
+      const color = RISK_COLOR[weekRisk];
+
+      // Rain "halo": radius + opacity scale with the selected week's rain metric,
+      // so scrubbing the time-slider shows where and when rain is expected.
+      if (rainValue > 0) {
+        L.circle([lat, lon], {
+          radius: 3000 + rainValue * 3500,
+          color: '#2563eb',
+          weight: 1,
+          fillColor: '#3b82f6',
+          fillOpacity: Math.min(0.35, 0.08 + rainValue * 0.06),
+        }).addTo(layer);
+      }
+
       const icon = L.divIcon({
         className: '',
         html: `
@@ -120,14 +138,14 @@ export function RealWeatherMap({
 
       L.marker([lat, lon], { icon })
         .addTo(layer)
-        .bindPopup(popupHtml(marker))
+        .bindPopup(popupHtml(marker, weekRisk, rainValue, wk?.weekStart))
         .on('click', () => onSelectRef.current(marker.code));
     });
 
     if (markers.length > 0 && bounds.isValid()) {
       map.fitBounds(bounds.pad(0.24), { animate: false, maxZoom: 8 });
     }
-  }, [markers, ready, selectedCode]);
+  }, [markers, ready, selectedCode, weekIndex]);
 
   return (
     <div
@@ -138,14 +156,15 @@ export function RealWeatherMap({
   );
 }
 
-function popupHtml(marker: MapCompanyMarker) {
+function popupHtml(marker: MapCompanyMarker, weekRisk: RiskLevel, rainValue: number, weekStart?: string) {
+  const basis = marker.weeks?.[0]?.rainBasis ?? 'rain workdays';
   return `
     <div style="min-width:220px">
       <div style="font-weight:700;color:#0f172a;margin-bottom:2px">${escapeHtml(marker.shortName)}</div>
       <div style="font-size:12px;color:#475569;margin-bottom:8px">${escapeHtml(marker.locationName ?? 'No location')}</div>
       <div style="display:grid;gap:4px;font-size:12px;color:#1e293b">
-        <div><strong>Risk:</strong> ${escapeHtml(marker.riskLevel)} (weather ${escapeHtml(marker.weatherRisk)})</div>
-        <div><strong>Forecast:</strong> ${marker.currentWeekRainWorkdays.toFixed(1)} rain workdays this week</div>
+        ${weekStart ? `<div><strong>Week of ${escapeHtml(weekStart)}:</strong> ${escapeHtml(weekRisk)} weather risk</div>` : ''}
+        <div><strong>Rain:</strong> ${rainValue} ${escapeHtml(basis)}</div>
         <div><strong>Source:</strong> ${escapeHtml(marker.weatherSource)}</div>
         <div><strong>Deferred:</strong> ${escapeHtml(eurCompact(marker.deferredCashImpact))}</div>
         <div><strong>Weather impact:</strong> ${escapeHtml(signedEur(marker.estimatedWeatherCashImpact))}</div>

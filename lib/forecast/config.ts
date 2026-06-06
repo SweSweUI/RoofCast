@@ -33,6 +33,7 @@ export const DEFAULT_PARAMS: Omit<ForecastParams, 'startWeek' | 'openingCash'> =
 
   baselineLookbackWeeks: 8,
   weatherIntensity: 1.0,
+  weeklyOtherCashOut: 0, // dividends / other outflow — configurable assumption (none in source data)
 };
 
 /** Internal stress-test weather intensity. The operating dashboard always uses

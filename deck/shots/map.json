@@ -1,0 +1,36 @@
+{
+  "size": {
+    "w": 840,
+    "h": 1000
+  },
+  "pts": [
+    {
+      "code": "ummels",
+      "name": "Peter Ummels · Brunssum",
+      "risk": "high",
+      "x": 549,
+      "y": 862
+    },
+    {
+      "code": "opcoa",
+      "name": "Opco A · Andijk",
+      "risk": "med",
+      "x": 407,
+      "y": 333
+    },
+    {
+      "code": "opcoc",
+      "name": "Opco C · Winschoten",
+      "risk": "high",
+      "x": 745,
+      "y": 208
+    },
+    {
+      "code": "compe",
+      "name": "Company E · Winschoten",
+      "risk": "high",
+      "x": 732,
+      "y": 222
+    }
+  ]
+}

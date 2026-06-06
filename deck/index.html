@@ -72,7 +72,7 @@ body{
 @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(13,148,136,.5)}50%{box-shadow:0 0 0 11px rgba(13,148,136,0)}}
 
 /* mini cards */
-.pcard{background:#fff;border:2px solid var(--line);border-radius:22px;padding:30px 32px;box-shadow:0 10px 30px rgba(15,23,42,.05)}
+.pcard{background:#fff;border:2px solid var(--line);border-radius:22px;padding:23px 30px;box-shadow:0 10px 30px rgba(15,23,42,.05)}
 .pcard h4{font-size:38px;font-weight:700;margin-bottom:10px}
 .pcard p{font-size:28px;color:var(--ink-muted);line-height:1.4}
 
@@ -83,7 +83,7 @@ body{
 /* ---- HERO ---- */
 #n-hero{background:radial-gradient(130% 130% at 80% -10%,#0f766e 0%,#0f172a 52%,#0b1220 100%);
   border-color:rgba(94,234,212,.25);justify-content:center}
-#n-hero .ph{color:#fff;font-size:150px}
+#n-hero .ph{color:#fff;font-size:130px}
 #n-hero .pb{color:#cbd5e1}
 #n-hero .pk{color:#5eead4}#n-hero .pk .d{background:#5eead4}
 #n-hero .ppill{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.2);color:#a7f3d0}
@@ -118,7 +118,7 @@ body{
 
 /* ---- model layers ---- */
 .layer{display:flex;align-items:center;gap:28px;background:#fff;border:2px solid var(--line);
-  border-left:8px solid var(--accent);border-radius:18px;padding:22px 30px;box-shadow:0 8px 22px rgba(15,23,42,.05)}
+  border-left:8px solid var(--accent);border-radius:18px;padding:16px 30px;box-shadow:0 8px 22px rgba(15,23,42,.05)}
 .layer .n{flex:0 0 56px;height:56px;border-radius:14px;background:var(--ink);color:#fff;display:grid;place-items:center;
   font-weight:800;font-size:32px}
 .layer .t{font-weight:700;font-size:34px}
@@ -194,10 +194,38 @@ body{
 .legend{position:absolute;bottom:26px;left:26px;background:rgba(255,255,255,.94);border:2px solid var(--line);
   border-radius:16px;padding:18px 24px;font-size:25px;display:flex;flex-direction:column;gap:10px}
 .legend i{width:18px;height:18px;border-radius:99px;display:inline-block;margin-right:12px;vertical-align:middle}
+/* real map image + animated weather overlay */
+.mapimg{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;display:block}
+.rain-layer{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:2}
+.rain-layer span{position:absolute;top:-14%;width:2px;height:34px;background:linear-gradient(transparent,rgba(37,99,235,.6));
+  border-radius:2px;animation:mrain linear infinite}
+@keyframes mrain{to{transform:translateY(135%)}}
+.rcell{position:absolute;transform:translate(-50%,-50%);width:48%;height:64%;border-radius:50%;pointer-events:none;z-index:1;
+  background:radial-gradient(closest-side,rgba(30,58,138,.34),rgba(30,58,138,.12) 58%,transparent);filter:blur(7px)}
+.panel.focused .rcell{animation:rcellpulse 3.2s ease-in-out infinite}
+@keyframes rcellpulse{0%,100%{opacity:.65;transform:translate(-50%,-50%) scale(1)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}}
+.cloud{position:absolute;height:15%;width:26%;border-radius:50%;pointer-events:none;z-index:1;filter:blur(5px);
+  background:radial-gradient(closest-side,rgba(148,163,184,.85),rgba(148,163,184,0));opacity:.6}
+.cloud.cl1{top:14%;animation:cdrift 28s linear infinite}
+.cloud.cl2{top:52%;height:12%;width:20%;opacity:.45;animation:cdrift 40s linear infinite;animation-delay:-14s}
+@keyframes cdrift{from{left:-32%}to{left:122%}}
+.mapbox .mk{z-index:4}
+.wxchip{position:absolute;top:18px;right:18px;z-index:5;background:rgba(15,23,42,.86);color:#e2e8f0;font-size:23px;font-weight:600;
+  border-radius:12px;padding:10px 16px;box-shadow:0 8px 22px rgba(0,0,0,.35)}
+/* whole-NL map: tight opco cluster + side info column */
+#n-map .mk .dot{width:24px;height:24px;border-width:4px}
+.maptag{position:absolute;transform:translate(-50%,-150%);z-index:6;font-size:20px;font-weight:800;color:var(--ink);
+  background:rgba(255,255,255,.92);padding:5px 12px;border-radius:9px;white-space:nowrap;box-shadow:0 6px 16px rgba(0,0,0,.22)}
+.maptag.below{transform:translate(-50%,60%)}
+.wxbox{background:rgba(15,23,42,.9);color:#e2e8f0;font-size:24px;font-weight:600;border-radius:14px;padding:15px 18px;box-shadow:0 8px 22px rgba(0,0,0,.3)}
+.opco-list{display:flex;flex-direction:column;gap:13px}
+.opco-row{display:flex;align-items:center;gap:13px;font-size:27px;color:var(--ink-soft)}
+.opco-row b{margin-left:auto;font-weight:800;font-size:22px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-muted)}
+.rdot{width:18px;height:18px;border-radius:99px;flex:0 0 auto}
 
 /* ---- iOS phones ---- */
 .phones{display:flex;gap:50px;justify-content:center;align-items:center;flex:1;perspective:2600px}
-.iphone{width:330px;border-radius:54px;background:#0f172a;padding:14px;box-shadow:0 40px 90px rgba(0,0,0,.4);
+.iphone{width:268px;border-radius:48px;background:#0f172a;padding:12px;box-shadow:0 40px 90px rgba(0,0,0,.4);
   position:relative;transform:rotateY(16deg)}
 .iphone:nth-child(2){transform:rotateY(-16deg)}
 .iphone .notch{position:absolute;top:22px;left:50%;transform:translateX(-50%);width:120px;height:28px;background:#0f172a;border-radius:0 0 18px 18px;z-index:3}
@@ -265,7 +293,7 @@ kbd{font-family:ui-monospace,Menlo,monospace;font-size:11px;background:rgba(255,
     <svg class="links" id="links"></svg>
 
     <!-- HERO -->
-    <section class="panel" id="n-hero" data-node="hero" style="left:1740px;top:150px;width:2920px;height:600px">
+    <section class="panel" id="n-hero" data-node="hero" style="left:1740px;top:150px;width:2920px;height:710px">
       <div class="row" style="align-items:center;gap:40px">
         <div class="hlogo">A</div>
         <div class="pk"><span class="d"></span>Altis Groep · PE-backed roofing portfolio</div>
@@ -285,18 +313,17 @@ kbd{font-family:ui-monospace,Menlo,monospace;font-size:11px;background:rgba(255,
     </section>
 
     <!-- PROBLEM -->
-    <section class="panel" id="n-problem" data-node="problem" style="left:320px;top:900px;width:1320px;height:840px">
+    <section class="panel" id="n-problem" data-node="problem" style="left:320px;top:900px;width:1320px;height:940px">
       <div class="badge">01</div>
       <div class="pk"><span class="d"></span>The problem</div>
-      <div class="ph">The CFO can't<br>answer one<br>question</div>
-      <div class="pb" style="font-style:italic;color:var(--ink-soft);margin-top:18px">“How much cash will be in the account in eight weeks?”</div>
-      <div class="spacer"></div>
-      <div class="col" style="gap:18px">
-        <div class="pchip"><span class="i">▸</span> 4 opcos · 4 accounting systems</div>
-        <div class="pchip"><span class="i">▸</span> Billing slips when it rains</div>
-        <div class="pchip"><span class="i">▸</span> ~4 weeks of debtor lag · fixed covenant floors</div>
+      <div class="ph" style="font-size:50px">The CFO can't answer one question</div>
+      <div class="pb" style="font-style:italic;color:var(--ink-soft);margin-top:16px">“How much cash will be in the account in eight weeks?”</div>
+      <div class="col" style="gap:14px;margin-top:26px">
+        <div class="pcard"><h4>4 opcos · 4 systems</h4><p>Snelstart, Exact, Gilde &amp; an invoice register — none reconcile to one cash view.</p></div>
+        <div class="pcard"><h4>Rain stops the roof</h4><p>Wet, windy or freezing workdays halt roofing — work, milestones &amp; invoices slip.</p></div>
+        <div class="pcard"><h4>The dip lands later</h4><p>Billing falls ~3–5 weeks after the bad weather, then catches up — hard to see coming.</p></div>
+        <div class="pcard"><h4>…then debtors pay on terms</h4><p>A further ~4-week lag — against fixed covenant floors, exactly in the wet season.</p></div>
       </div>
-      <div class="ps" style="margin-top:22px">Cash arrives late exactly when liquidity is tightest.</div>
     </section>
 
     <!-- INSIGHT (chain) -->
@@ -313,8 +340,22 @@ kbd{font-family:ui-monospace,Menlo,monospace;font-size:11px;background:rgba(255,
         <div class="conn"><div class="spark"></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
         <div class="pnode"><div class="ic">💶</div><h4>Cash-in delay</h4><p>Via ~4-week payment terms</p></div>
       </div>
-      <div class="spacer"></div>
-      <div class="honest"><span class="ic">⚠</span><div><b>Suggestive, not causal.</b> Strongest Pearson |r| ≈ 0.17–0.22, permutation p ≈ 0.07–0.19. Used only to shift the <b>timing</b> of projected billing — never to predict lost revenue.</div></div>
+      <div class="row" style="gap:40px;margin-top:30px;align-items:center">
+        <div style="flex:1.15">
+          <div style="font-weight:700;color:var(--accent-deep);font-size:26px;margin-bottom:12px">What the data shows — billing after a wet week</div>
+          <svg viewBox="0 0 1000 210" style="width:100%;height:auto;display:block">
+            <line x1="0" y1="118" x2="1000" y2="118" stroke="#e2e8f0" stroke-width="3" stroke-dasharray="6 12"/>
+            <path d="M0 118 L150 116 L300 146 L450 182 L580 150 L710 92 L850 114 L1000 116" fill="none" stroke="#0d9488" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="450" cy="182" r="11" fill="#b91c1c"/><circle cx="710" cy="92" r="11" fill="#15803d"/>
+            <text x="450" y="205" fill="#b45309" font-size="23" font-weight="700" text-anchor="middle">dip ≈ wk 3–5</text>
+            <text x="710" y="74" fill="#15803d" font-size="23" font-weight="700" text-anchor="middle">catch-up ≈ wk 7</text>
+          </svg>
+        </div>
+        <div class="col" style="flex:.95;gap:16px">
+          <div class="pcard" style="padding:22px 26px"><h4 style="font-size:30px">A wet week → a later dip</h4><p style="font-size:25px">Below-baseline billing 3–5 weeks on, then partial catch-up — a timing wave, not a loss.</p></div>
+          <div class="honest"><span class="ic">⚠</span><div><b>Suggestive, not causal.</b> Strongest Pearson |r| ≈ 0.17–0.22 (Ummels), p ≈ 0.07–0.19. We model only the <b>timing</b>, never lost revenue.</div></div>
+        </div>
+      </div>
     </section>
 
     <!-- DATA -->
@@ -336,19 +377,19 @@ kbd{font-family:ui-monospace,Menlo,monospace;font-size:11px;background:rgba(255,
     </section>
 
     <!-- MODEL -->
-    <section class="panel" id="n-model" data-node="model" style="left:320px;top:1900px;width:1320px;height:980px">
+    <section class="panel" id="n-model" data-node="model" style="left:320px;top:1860px;width:1320px;height:1140px">
       <div class="badge">04</div>
       <div class="pk"><span class="d"></span>Forecast engine</div>
-      <div class="ph" style="font-size:64px">A 6-layer forecast</div>
-      <div class="col" style="gap:14px;margin-top:22px">
-        <div class="layer"><div class="n">1</div><div><div class="t">Baseline run-rate</div><div class="d">8-wk rolling median + ISO-week seasonality</div></div></div>
-        <div class="layer"><div class="n">2</div><div><div class="t">Driver decomposition</div><div class="d">Materials 32 · sub 18 · labour 22 · overhead 10 %</div></div></div>
-        <div class="layer"><div class="n">3</div><div><div class="t">Weather timing shift</div><div class="d">High 25% deferred · medium 12% · later catch-up</div></div></div>
-        <div class="layer"><div class="n">4</div><div><div class="t">Payment-lag cash-in</div><div class="d">Spread t+2…t+8, peak ≈ t+4</div></div></div>
-        <div class="layer"><div class="n">5</div><div><div class="t">Live-forecast basis</div><div class="d">Live weather ~2 wks, then seasonal · wet/dry kept for internal stress-test</div></div></div>
-        <div class="layer"><div class="n">6</div><div><div class="t">Covenant headroom + trace</div><div class="d">Closing cash vs floor, a trace behind every number</div></div></div>
+      <div class="ph" style="font-size:58px">How the forecast<br>engine works</div>
+      <div class="col" style="gap:13px;margin-top:20px">
+        <div class="layer"><div class="n">1</div><div><div class="t">Start from each opco's billing pace</div><div class="d">Recent run-rate (8-wk median) + its seasonal pattern — busier summers, quieter winters.</div></div></div>
+        <div class="layer"><div class="n">2</div><div><div class="t">Shift the timing for weather</div><div class="d">A pile-up of bad-weather workdays pushes a share of billing later (high 25% · med 12%); it returns as catch-up.</div></div></div>
+        <div class="layer"><div class="n">3</div><div><div class="t">Turn billing into cash on terms</div><div class="d">Spread each invoice across debtor weeks — cash peaks ~4 weeks after billing.</div></div></div>
+        <div class="layer"><div class="n">4</div><div><div class="t">Subtract the cost-out drivers</div><div class="d">Materials 32 · subcontractor 18 · labour 22 · overhead 10 % of revenue (assumptions).</div></div></div>
+        <div class="layer"><div class="n">5</div><div><div class="t">Compare closing cash to the floor</div><div class="d">Flag the weeks where headroom gets tight vs the covenant / liquidity floor.</div></div></div>
+        <div class="layer"><div class="n">6</div><div><div class="t">Keep a trace behind every euro</div><div class="d">Each number links back to its driver, assumption and source transaction.</div></div></div>
       </div>
-      <div class="ps" style="margin-top:18px">Pure TypeScript function · runs on every page load · <b style="color:var(--ink)">15 tests green</b>.</div>
+      <div class="ps" style="margin-top:16px">Pure TypeScript · live weather (~2 wks) then seasonal as the basis · <b style="color:var(--ink)">15 tests green</b>.</div>
     </section>
 
     <!-- FORECAST BASIS — the live forecast is the operating assumption; wet/dry are internal stress-tests only -->
@@ -387,40 +428,41 @@ kbd{font-family:ui-monospace,Menlo,monospace;font-size:11px;background:rgba(255,
       <div class="pk"><span class="d"></span>Risk engine</div>
       <div class="ph">8 weather-to-cash risk signals</div>
       <div class="ps" style="margin-top:10px">Each: level · EUR impact · confidence · plain-English reason · trace to source.</div>
-      <div class="risks" style="margin-top:24px">
-        <div class="risk med"><span class="lv">Medium</span><h4>Weather Billing</h4><p>Rain defers billing timing</p><div class="imp">timing shift</div></div>
-        <div class="risk med"><span class="lv">Medium</span><h4>Cash-In Delay</h4><p>Debtor terms push cash later</p><div class="imp">~4-week lag</div></div>
-        <div class="risk low"><span class="lv">Low</span><h4>Payment Terms</h4><p>Spread t+2…t+8 modelled</p><div class="imp">assumption</div></div>
-        <div class="risk high"><span class="lv">High</span><h4>Cash-Out Assumption</h4><p>No cost ledger — costs configured</p><div class="imp">honest, not a flaw</div></div>
-        <div class="risk high"><span class="lv">High</span><h4>Covenant Headroom</h4><p>Closing cash vs floor (Opco C)</p><div class="imp">€-impact</div></div>
-        <div class="risk low"><span class="lv">Low</span><h4>Data Quality</h4><p>Dedup + reconciliation passed</p><div class="imp">26 files</div></div>
-        <div class="risk med"><span class="lv">Medium</span><h4>Forecast Confidence</h4><p>Per-week confidence rating</p><div class="imp">weak signal flagged</div></div>
-        <div class="risk med"><span class="lv">Medium</span><h4>Opco Underperformance</h4><p>Below portfolio run-rate</p><div class="imp">comparison</div></div>
+      <div class="risks" style="margin-top:22px">
+        <div class="risk med"><span class="lv">Medium</span><h4>Weather Billing</h4><p>Bad-weather workdays defer invoicing — the cash lands later.</p><div class="imp">timing shift</div></div>
+        <div class="risk med"><span class="lv">Medium</span><h4>Cash-In Delay</h4><p>Invoiced now, paid weeks later as debtors pay on their terms.</p><div class="imp">~4-week lag</div></div>
+        <div class="risk low"><span class="lv">Low</span><h4>Payment Terms</h4><p>How fast customers actually pay. Longer debtor days = later cash, less headroom.</p><div class="imp">debtor days</div></div>
+        <div class="risk high"><span class="lv">High</span><h4>Cash-Out Assumption</h4><p>Costs aren't in the data — modelled as %s. Flagged high on purpose (honest).</p><div class="imp">disclose</div></div>
+        <div class="risk high"><span class="lv">High</span><h4>Covenant Headroom</h4><p>Closing cash vs the floor. Opco C runs tight in the wet weeks.</p><div class="imp">€ impact</div></div>
+        <div class="risk low"><span class="lv">Low</span><h4>Data Quality</h4><p>Source completeness after dedup &amp; reconciliation across 26 files.</p><div class="imp">checked</div></div>
+        <div class="risk med"><span class="lv">Medium</span><h4>Forecast Confidence</h4><p>How sure the model is per week — lower far out, or on a weak weather signal.</p><div class="imp">per week</div></div>
+        <div class="risk med"><span class="lv">Medium</span><h4>Opco Underperformance</h4><p>An opco billing below its own run-rate &amp; the portfolio.</p><div class="imp">compare</div></div>
       </div>
     </section>
 
-    <!-- ROLES -->
-    <section class="panel" id="n-roles" data-node="roles" style="left:320px;top:3060px;width:2760px;height:840px">
+    <!-- CFO DASHBOARD — what's actually on the screen -->
+    <section class="panel" id="n-roles" data-node="roles" style="left:320px;top:3060px;width:2760px;height:880px">
       <div class="badge">07</div>
-      <div class="pk"><span class="d"></span>Role dashboards</div>
-      <div class="ph">The right view for every stakeholder</div>
-      <div class="roles" style="margin-top:24px">
-        <div class="role"><div class="ic">€</div><h4>CFO</h4><p>13-wk cash, 8 risks, scenarios, trace</p></div>
-        <div class="role"><div class="ic">⬡</div><h4>PE Board</h4><p>Portfolio, covenants, at-risk</p></div>
-        <div class="role"><div class="ic">⌂</div><h4>Opco MD</h4><p>Weather calendar, ops actions</p></div>
-        <div class="role"><div class="ic">⚒</div><h4>Project Lead</h4><p>Bad-weather windows, shifts</p></div>
-        <div class="role alt"><div class="ic">⌖</div><h4>Map</h4><p>Locations + weather risk</p></div>
-        <div class="role alt"><div class="ic">✦</div><h4>Agent</h4><p>Ask the forecast</p></div>
-        <div class="role alt"><div class="ic">⇄</div><h4>API</h4><p>Exact · Snelstart · Gilde</p></div>
-        <div class="role"><div class="ic">◷</div><h4>Data Quality</h4><p>Lineage &amp; dedup</p></div>
-        <div class="role"><div class="ic">∑</div><h4>Methodology</h4><p>Every assumption</p></div>
-        <div class="role"><div class="ic">⚙</div><h4>Admin</h4><p>RBAC &amp; data purge</p></div>
+      <div class="pk"><span class="d"></span>The product</div>
+      <div class="ph">Everything the CFO needs on one screen</div>
+      <div class="risks" style="margin-top:24px">
+        <div class="pcard"><h4>13-week KPI strip</h4><p>Net cash · min closing cash · covenant headroom · weeks at risk</p></div>
+        <div class="pcard"><h4>8 risk signals</h4><p>Level · € impact · confidence · reason · trace</p></div>
+        <div class="pcard"><h4>Cashflow &amp; drivers</h4><p>Cash-in/out + closing cash · cost-out per week</p></div>
+        <div class="pcard"><h4>Weather timing impact</h4><p>€ shifted by weather, per week</p></div>
+        <div class="pcard"><h4>Covenant headroom</h4><p>Closing cash vs floor, flagged weeks</p></div>
+        <div class="pcard"><h4>Company comparison</h4><p>Net cash across opcos — drill in</p></div>
+        <div class="pcard"><h4>Weekly table + trace</h4><p>Click any week → full trace drawer</p></div>
+        <div class="pcard"><h4>Controls · email · AI</h4><p>Tune assumptions · share findings · ask the assistant</p></div>
       </div>
-      <div class="ps" style="margin-top:18px"><b style="color:var(--ink)">5 RBAC roles</b> behind Supabase Auth — routes &amp; nav gated by middleware.</div>
+      <div class="row" style="gap:12px;margin-top:24px;flex-wrap:wrap;align-items:center">
+        <span class="ps" style="font-weight:700;color:var(--ink)">Supporting views:</span>
+        <span class="ppill">Agent</span><span class="ppill">API connectors</span><span class="ppill">Methodology</span><span class="ppill">Data Quality</span><span class="ppill">Admin</span>
+      </div>
     </section>
 
     <!-- TRACE -->
-    <section class="panel" id="n-trace" data-node="trace" style="left:3320px;top:3060px;width:1320px;height:840px">
+    <section class="panel" id="n-trace" data-node="trace" style="left:3320px;top:3060px;width:1320px;height:910px">
       <div class="badge">08</div>
       <div class="pk"><span class="d"></span>Explainability</div>
       <div class="ph" style="font-size:58px">Every euro traces to source</div>
@@ -440,27 +482,48 @@ kbd{font-family:ui-monospace,Menlo,monospace;font-size:11px;background:rgba(255,
       <div class="ps" style="margin-top:16px">Click any week → the trace drawer opens. <b style="color:var(--ink)">No black box.</b></div>
     </section>
 
-    <!-- MAP -->
-    <section class="panel" id="n-map" data-node="map" style="left:4820px;top:3060px;width:1260px;height:840px">
+    <!-- MAP — whole-Netherlands map + opco cluster + animated weather, with side info column -->
+    <section class="panel" id="n-map" data-node="map" style="left:4820px;top:3060px;width:1260px;height:940px">
       <div class="badge">09</div>
       <div class="pk"><span class="d"></span>Map &amp; live weather</div>
-      <div class="ph" style="font-size:54px">Risk on the map</div>
-      <div class="mapbox" style="margin-top:18px">
-        <div class="mk high" style="left:60%;top:62%"><div class="dot"></div><div class="nm">Ummels · Brunssum</div></div>
-        <div class="mk med" style="left:44%;top:74%"><div class="dot"></div><div class="nm">Opco C · Maastricht</div></div>
-        <div class="mk med" style="left:38%;top:48%"><div class="dot"></div><div class="nm">Opco A · proxy</div></div>
-        <div class="mk low" style="left:56%;top:34%"><div class="dot"></div><div class="nm">Company E · proxy</div></div>
-        <div class="legend"><div><i style="background:var(--high)"></i>High</div><div><i style="background:var(--medium)"></i>Medium</div><div><i style="background:var(--low)"></i>Low</div></div>
+      <div class="ph" style="font-size:54px">Risk across the portfolio</div>
+      <div class="row" style="flex:1;gap:28px;align-items:stretch;margin-top:18px">
+        <div class="mapbox" style="aspect-ratio:840/1000;flex:0 0 auto">
+          <img src="shots/map.png" class="mapimg" alt="Netherlands map">
+          <div class="rcell" style="left:65.4%;top:86.2%;width:30%;height:17%"></div>
+          <div class="rcell" style="left:88%;top:21%;width:28%;height:15%"></div>
+          <div class="cloud cl1"></div><div class="cloud cl2"></div>
+          <div class="rain-layer" id="maprain"></div>
+          <div class="mk high" style="left:65.4%;top:86.2%"><div class="dot"></div></div>
+          <div class="mk med" style="left:48.5%;top:33.3%"><div class="dot"></div></div>
+          <div class="mk high" style="left:88.7%;top:20.8%"><div class="dot"></div></div>
+          <div class="mk high" style="left:87.1%;top:22.2%"><div class="dot"></div></div>
+          <div class="maptag" style="left:65.4%;top:86.2%">Brunssum</div>
+          <div class="maptag" style="left:48.5%;top:33.3%">Andijk</div>
+          <div class="maptag below" style="left:84%;top:21%">Winschoten</div>
+        </div>
+        <div class="col" style="flex:1;gap:16px;justify-content:center">
+          <div class="pcard" style="padding:22px 26px">
+            <h4 style="font-size:30px;margin-bottom:16px">Altis portfolio · 4 opcos across NL</h4>
+            <div class="opco-list">
+              <div class="opco-row"><span class="rdot" style="background:var(--high)"></span>Peter Ummels · Brunssum <b>high</b></div>
+              <div class="opco-row"><span class="rdot" style="background:var(--medium)"></span>Opco A · Andijk <b>med</b></div>
+              <div class="opco-row"><span class="rdot" style="background:var(--high)"></span>Opco C · Winschoten <b>high</b></div>
+              <div class="opco-row"><span class="rdot" style="background:var(--high)"></span>Company E · Winschoten <b>high</b></div>
+            </div>
+          </div>
+          <div class="wxbox">Brunssum · 4 rain workdays · 25.9 mm · delay 21.9</div>
+          <div class="row" style="flex-wrap:wrap;gap:10px">
+            <span class="ppill live"><span class="dot"></span>Open-Meteo + RapidAPI</span>
+            <span class="ppill">AQI / PM2.5</span>
+          </div>
+        </div>
       </div>
-      <div class="row" style="flex-wrap:wrap;gap:10px;margin-top:14px">
-        <span class="ppill live"><span class="dot"></span>Live weather: Open-Meteo + RapidAPI</span>
-        <span class="ppill">Air quality · AQI / PM2.5</span>
-      </div>
-      <div class="ps" style="margin-top:12px">Leaflet on web · native MapKit on iOS. Only Ummels is a real location; rest are labelled proxies.</div>
+      <div class="ps" style="margin-top:12px">Real map · Leaflet on web, native MapKit on iOS. Only Ummels is a real location; the rest are labelled proxies.</div>
     </section>
 
     <!-- iOS -->
-    <section class="panel" id="n-ios" data-node="ios" style="left:320px;top:4060px;width:1320px;height:880px">
+    <section class="panel" id="n-ios" data-node="ios" style="left:320px;top:4060px;width:1320px;height:950px">
       <div class="badge">10</div>
       <div class="pk"><span class="d"></span>Multi-surface</div>
       <div class="ph" style="font-size:58px">Native iOS</div>
@@ -506,7 +569,7 @@ kbd{font-family:ui-monospace,Menlo,monospace;font-size:11px;background:rgba(255,
     </section>
 
     <!-- TECH -->
-    <section class="panel" id="n-tech" data-node="tech" style="left:4820px;top:4060px;width:1260px;height:880px">
+    <section class="panel" id="n-tech" data-node="tech" style="left:4820px;top:4060px;width:1260px;height:950px">
       <div class="badge">12</div>
       <div class="pk"><span class="d"></span>Under the hood</div>
       <div class="ph" style="font-size:62px">The stack</div>
@@ -525,18 +588,20 @@ kbd{font-family:ui-monospace,Menlo,monospace;font-size:11px;background:rgba(255,
     <!-- IMPACT / closer -->
     <section class="panel" id="n-impact" data-node="impact" style="left:2400px;top:5060px;width:1600px;height:900px">
       <div class="badge" style="background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.2);color:#94a3b8">13</div>
-      <div class="pk"><span class="d"></span>Impact</div>
-      <div class="ph" style="font-size:58px">Main risk in<br>10 seconds</div>
-      <div class="grid" style="grid-template-columns:1fr 1fr;gap:28px 40px;margin-top:26px">
-        <div class="it2"><div class="pnum" style="font-size:76px"><span data-count="32278">0</span></div><div class="plbl">transactions reconciled</div></div>
-        <div class="it2"><div class="pnum" style="font-size:76px">€<span data-count="36.67" data-dec="2">0</span><span class="u">M</span></div><div class="plbl">net billing (Ummels anchor)</div></div>
-        <div class="it2"><div class="pnum" style="font-size:76px">€<span data-count="281">0</span><span class="u">k</span></div><div class="plbl">deferred in wet scenario</div></div>
-        <div class="it2"><div class="pnum" style="font-size:76px"><span data-count="15">0</span> ✓</div><div class="plbl">tests green · build passes</div></div>
+      <div class="pk"><span class="d"></span>Why it matters</div>
+      <div class="ph" style="font-size:60px">See the cash dip<br>before it happens</div>
+      <div class="pb" style="color:#cbd5e1;margin-top:14px">Four disconnected ledgers → one weather-aware 13-week cash view. Every euro traceable, every assumption a knob.</div>
+      <div class="grid" style="grid-template-columns:1fr 1fr 1fr;gap:22px 36px;margin-top:28px">
+        <div class="it2"><div class="pnum" style="font-size:66px"><span data-count="4">0</span> → 1</div><div class="plbl">ledgers reconciled to one model</div></div>
+        <div class="it2"><div class="pnum" style="font-size:66px"><span data-count="13">0</span><span class="u">wk</span></div><div class="plbl">forward cash, week by week</div></div>
+        <div class="it2"><div class="pnum" style="font-size:66px"><span data-count="32278">0</span></div><div class="plbl">transactions reconciled</div></div>
+        <div class="it2"><div class="pnum" style="font-size:66px"><span data-count="8">0</span></div><div class="plbl">weather-to-cash risk signals</div></div>
+        <div class="it2"><div class="pnum" style="font-size:66px"><span data-count="3">0</span></div><div class="plbl">clicks: portfolio → source</div></div>
+        <div class="it2"><div class="pnum" style="font-size:66px"><span data-count="15">0</span> ✓</div><div class="plbl">tests green · ships today</div></div>
       </div>
       <div class="spacer"></div>
-      <div class="pb" style="color:#cbd5e1">Drill <b style="color:#fff">portfolio → opco → week → source</b> in 3 clicks.</div>
-      <div class="pb" style="color:#94a3b8;font-size:30px;margin-top:10px">Next: LTM-EBITDA overlay + weather-variance waterfall.</div>
-      <div class="row" style="gap:16px;margin-top:16px;flex-wrap:wrap">
+      <div class="pb" style="color:#94a3b8;font-size:28px">Next: LTM-EBITDA overlay + weather-variance waterfall.</div>
+      <div class="row" style="gap:16px;margin-top:14px;flex-wrap:wrap">
         <span class="acct">vercel deploy</span><span class="acct">cfo@altis.demo · AltisDemo!2026</span>
       </div>
     </section>
@@ -561,18 +626,30 @@ kbd{font-family:ui-monospace,Menlo,monospace;font-size:11px;background:rgba(255,
 (function(){
   const stage=document.getElementById('stage');
   const world=document.getElementById('world');
-  const WORLD_W=world.offsetWidth, WORLD_H=world.offsetHeight;
+  let WORLD_W=world.offsetWidth, WORLD_H=world.offsetHeight;
   const linksSvg=document.getElementById('links');
 
   // tour order + friendly titles
   const PATH=['hero','problem','insight','data','model','scenarios','risks','roles','trace','map','ios','agent','operate','tech','impact'];
   const TITLE={hero:'Altis',problem:'The problem',insight:'The insight',data:'Data foundation',model:'Forecast engine',
-    scenarios:'Forecast basis',risks:'Risk engine',roles:'Role dashboards',trace:'Traceability',map:'Map & live weather',ios:'Native iOS',
+    scenarios:'Forecast basis',risks:'Risk engine',roles:'CFO dashboard',trace:'Traceability',map:'Map & live weather',ios:'Native iOS',
     agent:'AI assistant',operate:'Operate & share',tech:'Tech stack',impact:'Impact'};
   const nodes={};
   PATH.forEach(id=>{ nodes[id]=document.getElementById('n-'+id); });
   // auto-number the tour badges from PATH order (hero has no badge)
   PATH.forEach((id,i)=>{ const b=nodes[id]&&nodes[id].querySelector('.badge'); if(b) b.textContent=String(i).padStart(2,'0'); });
+
+  // spread the panels apart from the origin for more breathing room between them,
+  // then grow the world to fit. Sizes stay the same; only the gaps grow.
+  const SPREAD=1.2;
+  let _maxR=0,_maxB=0;
+  PATH.forEach(id=>{ const el=nodes[id]; if(!el) return;
+    const nl=Math.round(el.offsetLeft*SPREAD), nt=Math.round(el.offsetTop*SPREAD);
+    el.style.left=nl+'px'; el.style.top=nt+'px';
+    _maxR=Math.max(_maxR, nl+el.offsetWidth); _maxB=Math.max(_maxB, nt+el.offsetHeight);
+  });
+  world.style.width=(_maxR+280)+'px'; world.style.height=(_maxB+280)+'px';
+  WORLD_W=world.offsetWidth; WORLD_H=world.offsetHeight;
 
   // transform state (screen = world*scale + t)
   let scale=1, tx=0, ty=0, idx=-1; // idx -1 = overview
@@ -585,6 +662,11 @@ kbd{font-family:ui-monospace,Menlo,monospace;font-size:11px;background:rgba(255,
     world.style.transform=`translate(${tx}px,${ty}px) scale(${scale})`;
   }
   function glide(on){ world.classList.toggle('glide',on); }
+
+  // HARD scroll-pin: the world is larger than the stage, so any stray scroll
+  // (scrollIntoView / focus / resize / trackpad) would shift everything off-screen
+  // and look "cut off". Reset to 0 on every scroll event — bulletproof.
+  stage.addEventListener('scroll',()=>{ if(stage.scrollTop||stage.scrollLeft){ stage.scrollTop=0; stage.scrollLeft=0; } },{passive:true});
 
   function fit(r,padFrac){
     const vw=innerWidth, vh=innerHeight, p=padFrac==null?0.06:padFrac;
@@ -706,6 +788,12 @@ kbd{font-family:ui-monospace,Menlo,monospace;font-size:11px;background:rgba(255,
 
   // resize: refit current view
   let rt; addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{ if(idx<0) goOverview(); else goTo(idx); },150);});
+
+  // map weather: scatter light animated rain over the real map
+  (function(){ const mr=document.getElementById('maprain'); if(!mr) return; let h='';
+    for(let i=0;i<60;i++){ const l=Math.random()*100, d=.5+Math.random()*.7, dl=Math.random()*2, op=.18+Math.random()*.4, ht=18+Math.random()*28;
+      h+='<span style="left:'+l+'%;animation-duration:'+d+'s;animation-delay:'+dl+'s;opacity:'+op+';height:'+ht+'px"></span>'; }
+    mr.innerHTML=h; })();
 
   // start on the overview so the whole "one slide" reads at a glance
   goOverview();

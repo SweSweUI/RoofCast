@@ -12,6 +12,7 @@ import { Pill } from './ui';
 
 const NAV = [
   { href: '/cfo', seg: 'cfo', label: 'CFO', desc: 'Operating cash forecast' },
+  { href: '/settings', seg: 'settings', label: 'Settings', desc: 'Forecast assumptions & controls' },
   { href: '/board', seg: 'board', label: 'PE Board', desc: 'Portfolio & covenants' },
   { href: '/map', seg: 'map', label: 'Map', desc: 'Locations & weather risk' },
   { href: '/agent', seg: 'agent', label: 'Agent', desc: 'Ask forecast questions' },

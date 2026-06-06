@@ -81,6 +81,13 @@ export async function GET(req: Request) {
         worstWeeklyWeatherImpact: Math.round(worstWeeklyWeatherImpact),
         minClosingCash: result.kpis.minClosingCash,
         weeksAtRisk: result.kpis.weeksAtRisk,
+        weeks: weeks.map((week) => ({
+          weekStart: week.weekStart,
+          risk: week.weatherRisk,
+          rainValue: week.weatherRiskValue,
+          rainBasis: week.weatherRiskBasis,
+          isLive: week.isLiveWeather,
+        })),
       }];
     });
 

@@ -146,7 +146,8 @@ export function computeCompanyForecast(input: ForecastInput): ForecastResult {
     const fcCashIn = cashIn(w, true);
     const blCashIn = cashIn(w, false);
     const drivers = cashOutDrivers(w);
-    const fcCashOut = drivers.materials + drivers.subcontractor + drivers.labour + drivers.overhead;
+    const otherOut = params.weeklyOtherCashOut ?? 0;
+    const fcCashOut = drivers.materials + drivers.subcontractor + drivers.labour + drivers.overhead + otherOut;
     const net = fcCashIn - fcCashOut;
     closing += net;
 
@@ -336,6 +337,13 @@ function buildTrace(a: {
       driver: d,
       contributionAmount: -r0(a.drivers[d]),
       adjustmentReason: reasons[d],
+    });
+  }
+  if ((a.params.weeklyOtherCashOut ?? 0) > 0) {
+    links.push({
+      driver: 'other_cash_out',
+      contributionAmount: -r0(a.params.weeklyOtherCashOut ?? 0),
+      adjustmentReason: 'Dividends / other weekly outflow — configurable assumption, not in the revenue-only source data.',
     });
   }
   return links;

@@ -21,7 +21,7 @@ export function FlippingCard({
 
   return (
     <div
-      className="[perspective:1000px] cursor-pointer"
+      className="group [perspective:1000px] cursor-pointer"
       style={{
         "--height": `${height}px`,
         "--width": `${width}px`,
@@ -32,6 +32,8 @@ export function FlippingCard({
         className={cn(
           "relative rounded-md border border-panel-line bg-panel shadow-card transition-all duration-700 [transform-style:preserve-3d]",
           "h-[var(--height)] w-[var(--width)]",
+          // Flip on hover (desktop); click toggles for touch devices.
+          "group-hover:[transform:rotateY(180deg)]",
           isFlipped && "[transform:rotateY(180deg)]",
           className
         )}

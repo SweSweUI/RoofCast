@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useApi, useDashboardState } from '@/lib/client/hooks';
+import { useSettings } from '@/lib/client/settings';
 import { SCENARIO_LABELS, type MapCompanyMarker, type MapResponse, type RiskLevel } from '@/lib/types';
 import { dateShort, eurCompact, signedEur } from '@/lib/format';
 import {
@@ -22,8 +23,10 @@ const RANK: Record<RiskLevel, number> = { low: 0, medium: 1, high: 2 };
 
 export default function MapPage() {
   const { scenario } = useDashboardState();
-  const { data, loading, error } = useApi<MapResponse>(`/api/map?scenario=${scenario}`);
+  const { query } = useSettings();
+  const { data, loading, error } = useApi<MapResponse>(`/api/map?scenario=${scenario}${query}`);
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
+  const [weekIndex, setWeekIndex] = useState(0);
 
   if (error) {
     return (
@@ -42,12 +45,15 @@ export default function MapPage() {
     return b.deferredCashImpact - a.deferredCashImpact;
   });
   const selected = markers.find((marker) => marker.code === selectedCode) ?? markers[0] ?? null;
+  const horizon = markers[0]?.weeks?.length ?? 0;
+  const wkIdx = Math.min(weekIndex, Math.max(0, horizon - 1));
+  const weekLabel = markers[0]?.weeks?.[wkIdx]?.weekStart ?? null;
 
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <SectionTitle
-          sub={`${SCENARIO_LABELS[scenario]}${data.startWeek ? ` - 13 weeks from ${dateShort(data.startWeek)}` : ''}`}
+          sub={`${SCENARIO_LABELS[scenario]}${data.startWeek ? ` - ${horizon} weeks from ${dateShort(data.startWeek)}` : ''}`}
         >
           Map - Location Weather Risk
         </SectionTitle>
@@ -69,8 +75,27 @@ export default function MapPage() {
           subtitle="OpenStreetMap pins. Marker color combines weather-delay and cash/liquidity risk; exact project coordinates can be added later."
           pad={false}
         >
+          {horizon > 0 && (
+            <div className="flex flex-wrap items-center gap-3 border-b border-panel-line px-4 py-3">
+              <span className="text-2xs font-semibold uppercase tracking-wide text-ink-faint">Week</span>
+              <input
+                type="range"
+                min={0}
+                max={Math.max(0, horizon - 1)}
+                step={1}
+                value={wkIdx}
+                onChange={(e) => setWeekIndex(Number(e.target.value))}
+                className="h-1.5 flex-1 cursor-pointer accent-accent"
+                aria-label="Forecast week"
+              />
+              <span className="text-xs font-medium text-ink-soft tnum">
+                {weekLabel ? `Week of ${dateShort(weekLabel)}` : '—'} · {wkIdx + 1}/{horizon}
+              </span>
+              <span className="text-[10px] text-ink-faint">blue halos = rain intensity</span>
+            </div>
+          )}
           <div className="relative">
-            <RealWeatherMap markers={markers} selectedCode={selected?.code ?? null} onSelect={setSelectedCode} />
+            <RealWeatherMap markers={markers} selectedCode={selected?.code ?? null} onSelect={setSelectedCode} weekIndex={wkIdx} />
             <div className="absolute bottom-8 left-3 z-[500] rounded-md border border-panel-line bg-white/90 px-3 py-2 text-2xs text-ink-muted shadow-card">
               <div className="mb-1 font-semibold text-ink">Risk legend</div>
               <div className="flex flex-wrap gap-2">
@@ -153,7 +178,7 @@ function MarkerDetail({ marker }: { marker: MapCompanyMarker }) {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
-        <Kpi label="Combined risk" value={marker.riskLevel} tone={toneForRisk(marker.riskLevel)} sub={`${marker.weeksAtRisk}/13 weeks at risk`} />
+        <Kpi label="Combined risk" value={marker.riskLevel} tone={toneForRisk(marker.riskLevel)} sub={`${marker.weeksAtRisk}/${marker.weeks.length} weeks at risk`} />
         <Kpi label="Weather risk" value={marker.weatherRisk} tone={toneForRisk(marker.weatherRisk)} sub={`${marker.highRiskWeeks} high, ${marker.mediumRiskWeeks} medium`} />
         <Kpi label="Deferred cash" value={eurCompact(marker.deferredCashImpact)} tone={marker.deferredCashImpact > 0 ? 'warn' : 'good'} sub="timing only" />
         <Kpi label="Worst week" value={signedEur(marker.worstWeeklyWeatherImpact)} tone={marker.worstWeeklyWeatherImpact < 0 ? 'bad' : 'default'} sub={marker.nextRiskWeek ? dateShort(marker.nextRiskWeek) : 'no risk week'} />

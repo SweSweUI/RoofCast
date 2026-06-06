@@ -111,6 +111,7 @@ export interface ForecastParams {
   // scenario weather intensity multiplier on expected rain workdays / delay score
   weatherIntensity: number;
   covenantFloorOverride?: number; // optional dashboard override for the covenant warning floor
+  weeklyOtherCashOut?: number; // dividends / other weekly outflow (assumption; not in source data)
 }
 
 export interface DriverContribution {
@@ -270,6 +271,8 @@ export interface MapCompanyMarker {
   worstWeeklyWeatherImpact: number;
   minClosingCash: number;
   weeksAtRisk: number;
+  // Per-week weather for the map time-slider (scrub to recolor markers + rain).
+  weeks: { weekStart: string; risk: RiskLevel; rainValue: number; rainBasis: string; isLive: boolean }[];
 }
 
 export interface MapResponse {

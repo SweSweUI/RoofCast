@@ -47,6 +47,8 @@ export function parseOverrides(sp: URLSearchParams): Partial<ForecastParams> {
   if (opening !== undefined) o.openingCash = opening;
   const lookback = numf('baselineLookbackWeeks');
   if (lookback !== undefined) o.baselineLookbackWeeks = Math.round(lookback);
+  const otherOut = numf('weeklyOtherCashOut') ?? numf('dividend');
+  if (otherOut !== undefined) o.weeklyOtherCashOut = Math.max(0, Math.round(otherOut));
   return o;
 }
 
