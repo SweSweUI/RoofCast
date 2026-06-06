@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import clsx from 'clsx';
 import { IBM_Plex_Sans } from 'next/font/google';
 import { AnimatedText } from '@/components/ui/animated-text';
+import AnimatedGradient from '@/components/ui/animated-gradient';
 
 // IBM's brand typeface (IBM Plex), scoped to the launch animation only.
 const ibmPlex = IBM_Plex_Sans({ subsets: ['latin'], weight: ['600', '700'] });
@@ -37,16 +38,19 @@ export function LaunchSplash() {
       aria-hidden
       className={clsx(
         // desktop only — skip the splash on phones/small screens
-        'fixed inset-0 z-[100] hidden items-center justify-center bg-[#05060a] md:flex',
+        'fixed inset-0 z-[100] hidden items-center justify-center overflow-hidden bg-[#05060a] md:flex',
         'transition-opacity ease-out',
         leaving ? 'pointer-events-none opacity-0' : 'opacity-100',
       )}
       style={{ transitionDuration: `${FADE_MS}ms` }}
     >
-      {/* subtle radial glow behind the mark */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(37,99,235,0.18),transparent_60%)]" />
+      {/* animated WebGL gradient backdrop (Prism — matches the blue theme) */}
+      <AnimatedGradient config={{ preset: 'Prism' }} style={{ zIndex: 0 }} />
 
-      <div className="relative flex flex-col items-center gap-6">
+      {/* dim layer so the logo + name stay the clear focus */}
+      <div className="pointer-events-none absolute inset-0 z-[1] bg-black/55" />
+
+      <div className="relative z-10 flex flex-col items-center gap-6">
         <img
           src="/roofcast-logo.jpg"
           alt="RoofCast"
