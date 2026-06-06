@@ -15,7 +15,7 @@ import { CovenantChart } from '@/components/charts/CovenantChart';
 import { CompanyCompareChart } from '@/components/charts/CompanyCompareChart';
 import { RiskOverview } from '@/components/RiskOverview';
 import { EmailFindingsButton } from '@/components/EmailFindingsButton';
-import { CfoMethodologyPanel } from '@/components/CfoMethodologyPanel';
+import { SeasonalChart } from '@/components/charts/SeasonalChart';
 import { MiniDataAgent } from '@/components/MiniDataAgent';
 
 export default function CfoPage() {
@@ -98,17 +98,32 @@ export default function CfoPage() {
         <Kpi label={`Cash-in (${activeHorizon}wk)`} value={eurCompact(k.totalCashIn)} sub={eur(k.totalCashIn)} />
         <Kpi label={`Cash-out (${activeHorizon}wk)`} value={eurCompact(k.totalCashOut)} sub={eur(k.totalCashOut)} />
         <Kpi label="Min closing cash" value={eurCompact(k.minClosingCash)} sub={`week of ${dateShort(k.minClosingWeek)}`} tone={breach ? 'bad' : 'default'} />
-        <Kpi label="Covenant" value={breach ? 'Breach' : threshold == null ? 'n/a' : 'Headroom'} tone={breach ? 'bad' : 'good'} sub={threshold == null ? 'no floor set' : `floor ${eurCompact(threshold)}`} hint={label} />
-        <Kpi label="Weeks at risk" value={`${k.weeksAtRisk}/${activeHorizon}`} tone={k.weeksAtRisk > activeHorizon * 0.3 ? 'warn' : 'default'} sub="liquidity / weather" />
+        <Kpi
+          label="Covenant"
+          value={breach ? 'Breach' : threshold == null ? 'n/a' : 'Headroom'}
+          tone={breach ? 'bad' : 'good'}
+          sub={threshold == null ? 'no floor set' : `floor ${eurCompact(threshold)}`}
+          hint={label}
+          info="Your safety buffer: the cash we expect you to have left above the minimum you've agreed to keep. If it turns into a breach, the forecast dips below that floor."
+        />
+        <Kpi
+          label="Weeks at risk"
+          value={`${k.weeksAtRisk}/${activeHorizon}`}
+          tone={k.weeksAtRisk > activeHorizon * 0.3 ? 'warn' : 'default'}
+          sub="liquidity / weather"
+          info="How many forecast weeks look risky — either cash gets tight (near or below your safety floor) or bad weather is likely to push payments later. Fewer is better."
+          infoAlign="right"
+        />
       </div>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(340px,0.7fr)]">
-        <CfoMethodologyPanel
-          language={settings.language}
-          horizonWeeks={activeHorizon}
-          weatherRule={weatherRule}
-          covenantFloor={threshold}
-        />
+        <Card
+          title="Billing is seasonal"
+          subtitle="Average monthly revenue · all four opcos · 2023–2026"
+          info="Revenue isn't flat across the year — it dips in winter and during the August builders' holiday, and peaks in autumn. The forecast learns this pattern, so the baseline already expects the seasonal ups and downs before any weather effect."
+        >
+          <SeasonalChart />
+        </Card>
         <MiniDataAgent
           company={company}
           scenario={scenario}
@@ -120,7 +135,11 @@ export default function CfoPage() {
       {/* risk-first: surface the eight weather-to-cash risk signals before the charts */}
       <RiskOverview company={company} scenario={scenario} extra={query} horizonWeeks={activeHorizon} />
 
-      <Card title={`${activeHorizon}-week cash-in / cash-out & closing cash`} subtitle="Bars = weekly flows · line = closing cash · shaded = live-forecast weeks · drag or use the range buttons to zoom">
+      <Card
+        title={`${activeHorizon}-week cash-in / cash-out & closing cash`}
+        subtitle="Bars = weekly flows · line = closing cash · shaded = live-forecast weeks · drag or use the range buttons to zoom"
+        info="Money coming in versus going out each week, with the line showing your running cash balance. Shaded weeks use the live weather forecast; the rest use typical weather for the time of year."
+      >
         <CashflowChart weeks={result.weeks} />
       </Card>
 
@@ -128,17 +147,30 @@ export default function CfoPage() {
         <Card title="Cash-out drivers by week" subtitle="Materials · subcontractor · labour · overhead (configurable assumptions)">
           <DriverSplitChart weeks={result.weeks} />
         </Card>
-        <Card title="Weather forecast timing impact" subtitle={`${weatherRule.label}: live weather-driven cash timing shifts`}>
+        <Card
+          title="Weather forecast timing impact"
+          subtitle={`${weatherRule.label}: live weather-driven cash timing shifts`}
+          info="Weeks where the weather forecast is likely to move cash to a later date. It's a timing shift, not lost money — the work and its payment are expected to land a few weeks later."
+        >
           <WeatherImpactList weeks={result.weeks} />
         </Card>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-2">
-        <Card title={`Covenant headroom — ${label}`} subtitle={threshold == null ? 'No covenant floor configured' : `Closing cash vs floor ${eur(threshold)} (assumption)`}>
+        <Card
+          title={`Covenant headroom — ${label}`}
+          subtitle={threshold == null ? 'No covenant floor configured' : `Closing cash vs floor ${eur(threshold)} (assumption)`}
+          info="Each week's projected cash compared to the minimum you want to stay above. Bars above the line are your buffer; anything below it is a breach of the floor."
+        >
           <CovenantChart weeks={result.weeks} threshold={threshold} thresholdLabel={label} />
         </Card>
         {companies ? (
-          <Card title={`Company comparison — net cash (${activeHorizon}wk)`} subtitle="Switch company in the top bar to drill in">
+          <Card
+            title={`Company comparison — net cash (${activeHorizon}wk)`}
+            subtitle="Switch company in the top bar to drill in"
+            info="How each operating company's expected net cash over the forecast compares. Colours flag which ones look risky. Pick a company in the top bar to dig into one."
+            infoAlign="right"
+          >
             <CompanyCompareChart
               rows={companies.map((c) => ({
                 name: c.companyName,
@@ -149,13 +181,22 @@ export default function CfoPage() {
             />
           </Card>
         ) : (
-          <Card title="Weather delay impact" subtitle="Net € shifted by weather timing, per week">
+          <Card
+            title="Weather delay impact"
+            subtitle="Net € shifted by weather timing, per week"
+            info="Weeks where the weather forecast is likely to move cash to a later date. It's a timing shift, not lost money — the work and its payment are expected to land a few weeks later."
+            infoAlign="right"
+          >
             <WeatherImpactList weeks={result.weeks} />
           </Card>
         )}
       </div>
 
-      <Card title="Weekly detail & traceability" subtitle="Click any week to trace the number back to drivers, assumptions and source transactions">
+      <Card
+        title="Weekly detail & traceability"
+        subtitle="Click any week to trace the number back to drivers, assumptions and source transactions"
+        info="The week-by-week detail behind the forecast. Each row shows cash in, cash out, closing balance, headroom and risk — click a week to trace the numbers back to their source."
+      >
         <WeekTable weeks={result.weeks} onPick={setWeek} />
       </Card>
 

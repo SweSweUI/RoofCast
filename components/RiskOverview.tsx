@@ -45,6 +45,7 @@ export function RiskOverview({
     <Card
       title="Risk overview — weather-to-cash"
       subtitle={`Eight signals: where billing/cash timing, assumptions and covenants put the ${horizonWeeks}-week forecast at risk`}
+      info="The main things that could throw the forecast off — weather delays, tight cash weeks, and assumptions we had to make. Flip a card to see why it's flagged and where the number comes from."
       right={
         <div className="flex items-center gap-2 text-2xs">
           <span className="rounded bg-red-50 px-1.5 py-0.5 font-medium text-risk-high">{high} high</span>

@@ -1,6 +1,7 @@
 import clsx from 'clsx';
 import type { ReactNode } from 'react';
 import type { RiskLevel } from '@/lib/types';
+import { InfoTip } from './ui/info-tip';
 
 export function Card({
   children,
@@ -9,6 +10,8 @@ export function Card({
   subtitle,
   right,
   pad = true,
+  info,
+  infoAlign,
 }: {
   children: ReactNode;
   className?: string;
@@ -16,6 +19,9 @@ export function Card({
   subtitle?: ReactNode;
   right?: ReactNode;
   pad?: boolean;
+  /** Plain-language explanation shown via an info icon next to the title. */
+  info?: string;
+  infoAlign?: 'left' | 'right';
 }) {
   return (
     <section
@@ -27,7 +33,18 @@ export function Card({
       {(title || right) && (
         <header className="flex items-start justify-between gap-3 border-b border-panel-line px-4 py-3">
           <div>
-            {title && <h2 className="text-sm font-semibold text-ink">{title}</h2>}
+            {title && (
+              <h2 className="flex items-center gap-1.5 text-sm font-semibold text-ink">
+                {title}
+                {info && (
+                  <InfoTip
+                    text={info}
+                    align={infoAlign}
+                    label={typeof title === 'string' ? `About ${title}` : 'More information'}
+                  />
+                )}
+              </h2>
+            )}
             {subtitle && <p className="mt-0.5 text-2xs text-ink-muted">{subtitle}</p>}
           </div>
           {right && <div className="shrink-0">{right}</div>}
@@ -44,12 +61,17 @@ export function Kpi({
   sub,
   tone = 'default',
   hint,
+  info,
+  infoAlign,
 }: {
   label: string;
   value: ReactNode;
   sub?: ReactNode;
   tone?: 'default' | 'good' | 'warn' | 'bad';
   hint?: string;
+  /** Plain-language explanation shown via an info icon next to the label. */
+  info?: string;
+  infoAlign?: 'left' | 'right';
 }) {
   const toneCls = {
     default: 'text-ink',
@@ -59,7 +81,10 @@ export function Kpi({
   }[tone];
   return (
     <div className="rounded-lg border border-panel-line bg-panel px-4 py-3 shadow-card" title={hint}>
-      <div className="text-2xs font-medium uppercase tracking-wide text-ink-faint">{label}</div>
+      <div className="flex items-center gap-1 text-2xs font-medium uppercase tracking-wide text-ink-faint">
+        <span>{label}</span>
+        {info && <InfoTip text={info} align={infoAlign} label={`About ${label}`} />}
+      </div>
       <div className={clsx('mt-1 text-xl font-semibold tnum', toneCls)}>{value}</div>
       {sub && <div className="mt-0.5 text-2xs text-ink-muted tnum">{sub}</div>}
     </div>

@@ -10,9 +10,12 @@ import { ROLE_LABEL, canAccess, type Role } from '@/lib/rbac';
 import type { SessionUser } from '@/lib/supabase/server';
 import { Pill } from './ui';
 
+// Primary user journeys first (role dashboards + tools); supporting
+// configuration (Data Quality, Settings) sits lower, just above Admin.
+// Methodology is no longer a top-level tab — it lives inside Settings as
+// supporting documentation (and remains reachable at /methodology).
 const NAV = [
   { href: '/cfo', seg: 'cfo', label: 'CFO', desc: 'Operating cash forecast' },
-  { href: '/settings', seg: 'settings', label: 'Settings', desc: 'Forecast assumptions & controls' },
   { href: '/board', seg: 'board', label: 'PE Board', desc: 'Portfolio & covenants' },
   { href: '/map', seg: 'map', label: 'Map', desc: 'Locations & weather risk' },
   { href: '/agent', seg: 'agent', label: 'Agent', desc: 'Ask forecast questions' },
@@ -20,7 +23,7 @@ const NAV = [
   { href: '/opco', seg: 'opco', label: 'Opco MD', desc: 'Single-company ops' },
   { href: '/project', seg: 'project', label: 'Project Lead', desc: 'Weather & schedule' },
   { href: '/data-quality', seg: 'data-quality', label: 'Data Quality', desc: 'Ingestion & assumptions' },
-  { href: '/methodology', seg: 'methodology', label: 'Methodology', desc: 'Lag analysis & model' },
+  { href: '/settings', seg: 'settings', label: 'Settings', desc: 'Assumptions, controls & methodology' },
   { href: '/admin', seg: 'admin', label: 'Admin', desc: 'Users & data governance' },
 ];
 

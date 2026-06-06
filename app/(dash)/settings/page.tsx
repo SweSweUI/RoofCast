@@ -1,15 +1,30 @@
 'use client';
 import clsx from 'clsx';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useSettings, HORIZON_OPTIONS, WEATHER_RULES } from '@/lib/client/settings';
 import { Card, Pill, SectionTitle } from '@/components/ui';
+import { CfoMethodologyPanel } from '@/components/CfoMethodologyPanel';
+import { MethodologyContent } from '@/components/MethodologyContent';
 import { eurCompact } from '@/lib/format';
 
 export default function SettingsPage() {
   const { settings, update, setDriver, reset, isDefault } = useSettings();
   const nl = settings.language === 'nl';
+  const [showMethodology, setShowMethodology] = useState(false);
   const driverTotal =
     settings.drivers.materials + settings.drivers.subcontractor + settings.drivers.labour + settings.drivers.overhead;
+
+  // The same plain-language methodology widget shown on the CFO view, wired to
+  // the live settings here so editing the weather rule / floor updates it in place.
+  const rulePreset = WEATHER_RULES.find((r) => r.mode === settings.weatherRiskMode) ?? WEATHER_RULES[0];
+  const weatherRule = {
+    label: rulePreset.label,
+    mode: rulePreset.mode,
+    medium: settings.weatherMediumThreshold,
+    high: settings.weatherHighThreshold,
+    explanationEn: rulePreset.en,
+    explanationNl: rulePreset.nl,
+  };
 
   return (
     <div className="space-y-5">
@@ -151,6 +166,56 @@ export default function SettingsPage() {
           {nl ? ' over methodiek en data.' : ' about methodology and data.'}
         </p>
       </Card>
+
+      {/* Plain-language methodology widget — reflects the settings above live. */}
+      <CfoMethodologyPanel
+        language={settings.language}
+        horizonWeeks={settings.horizonWeeks}
+        weatherRule={weatherRule}
+        covenantFloor={settings.covenantFloor}
+      />
+
+      {/* Methodology — supporting documentation, collapsed by default so it
+          doesn't compete with the configuration controls above. */}
+      <section className="rounded-lg border border-panel-line bg-panel shadow-card">
+        <button
+          type="button"
+          onClick={() => setShowMethodology((s) => !s)}
+          aria-expanded={showMethodology}
+          className="flex w-full items-start justify-between gap-3 px-4 py-3 text-left"
+        >
+          <div>
+            <h2 className="text-sm font-semibold text-ink">
+              {nl ? 'Methodologie & modelvalidatie' : 'Methodology & model validation'}
+            </h2>
+            <p className="mt-0.5 text-2xs text-ink-muted">
+              {nl
+                ? 'Hoe het weer-vertragingsmodel werkt en hoe het is gevalideerd — ondersteunende documentatie'
+                : 'How the weather-delay model works and how it was validated — supporting documentation'}
+            </p>
+          </div>
+          <span className="flex shrink-0 items-center gap-2">
+            <Pill tone="muted">{nl ? 'documentatie' : 'documentation'}</Pill>
+            <svg
+              viewBox="0 0 24 24"
+              className={clsx('h-4 w-4 text-ink-faint transition-transform', showMethodology && 'rotate-180')}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </span>
+        </button>
+        {showMethodology && (
+          <div className="border-t border-panel-line p-4">
+            <MethodologyContent showHeader={false} />
+          </div>
+        )}
+      </section>
     </div>
   );
 }
