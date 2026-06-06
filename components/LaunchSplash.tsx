@@ -1,7 +1,11 @@
 'use client';
 import { useEffect, useState } from 'react';
 import clsx from 'clsx';
+import { IBM_Plex_Sans } from 'next/font/google';
 import { AnimatedText } from '@/components/ui/animated-text';
+
+// IBM's brand typeface (IBM Plex), scoped to the launch animation only.
+const ibmPlex = IBM_Plex_Sans({ subsets: ['latin'], weight: ['600', '700'] });
 
 // Letter-stagger + underline timings (kept in sync with the AnimatedText props
 // below) plus a short hold, after which the splash fades out into the app.
@@ -44,7 +48,7 @@ export function LaunchSplash() {
 
       <div className="relative flex flex-col items-center gap-6">
         <img
-          src="/roofcast-logo.png"
+          src="/roofcast-logo.jpg"
           alt="RoofCast"
           width={132}
           height={132}
@@ -54,7 +58,7 @@ export function LaunchSplash() {
           text="RoofCast"
           duration={0.08}
           delay={0.1}
-          textClassName="text-5xl sm:text-6xl font-bold tracking-tight text-white"
+          textClassName={`${ibmPlex.className} text-5xl sm:text-6xl font-bold tracking-tight text-white`}
           underlineGradient="from-blue-600 via-sky-400 to-blue-600"
           underlineHeight="h-1.5"
           underlineOffset="-bottom-3"
