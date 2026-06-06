@@ -32,7 +32,7 @@ body{
 .stage{position:fixed;inset:0;overflow:hidden;cursor:grab;
   background:radial-gradient(120% 90% at 50% 0%,#0f2330 0%,#0a121f 45%,#070c16 100%)}
 .stage.grabbing{cursor:grabbing}
-.world{position:absolute;top:0;left:0;width:6400px;height:5240px;transform-origin:0 0}
+.world{position:absolute;top:0;left:0;width:6400px;height:6260px;transform-origin:0 0}
 .world.glide{transition:transform 1s cubic-bezier(.45,.05,.15,1)}
 .links{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
 
@@ -345,24 +345,40 @@ kbd{font-family:ui-monospace,Menlo,monospace;font-size:11px;background:rgba(255,
         <div class="layer"><div class="n">2</div><div><div class="t">Driver decomposition</div><div class="d">Materials 32 · sub 18 · labour 22 · overhead 10 %</div></div></div>
         <div class="layer"><div class="n">3</div><div><div class="t">Weather timing shift</div><div class="d">High 25% deferred · medium 12% · later catch-up</div></div></div>
         <div class="layer"><div class="n">4</div><div><div class="t">Payment-lag cash-in</div><div class="d">Spread t+2…t+8, peak ≈ t+4</div></div></div>
-        <div class="layer"><div class="n">5</div><div><div class="t">Scenarios</div><div class="d">Base / wet / dry — intensity 1.0 / 1.5 / 0.5</div></div></div>
+        <div class="layer"><div class="n">5</div><div><div class="t">Live-forecast basis</div><div class="d">Live weather ~2 wks, then seasonal · wet/dry kept for internal stress-test</div></div></div>
         <div class="layer"><div class="n">6</div><div><div class="t">Covenant headroom + trace</div><div class="d">Closing cash vs floor, a trace behind every number</div></div></div>
       </div>
       <div class="ps" style="margin-top:18px">Pure TypeScript function · runs on every page load · <b style="color:var(--ink)">15 tests green</b>.</div>
     </section>
 
-    <!-- SCENARIOS -->
+    <!-- FORECAST BASIS — the live forecast is the operating assumption; wet/dry are internal stress-tests only -->
     <section class="panel" id="n-scenarios" data-node="scenarios" style="left:1820px;top:1960px;width:1320px;height:860px">
       <div class="badge">05</div>
-      <div class="pk"><span class="d"></span>Scenario analysis</div>
-      <div class="ph" style="font-size:62px">Base · Wet · Dry</div>
-      <div class="scwrap" style="margin-top:24px">
-        <div><div class="barbox"><div class="pbar cin" style="--h:230px;--bd:.3s"></div><div class="pbar cout" style="--h:185px;--bd:.45s"></div></div><div class="sccap"><div class="l">Base</div><div class="i" style="color:var(--accent-deep)">1.0</div><div class="s">live + seasonal</div></div></div>
-        <div><div class="barbox"><div class="pbar cin" style="--h:165px;--bd:.55s"></div><div class="pbar cout" style="--h:185px;--bd:.7s"></div></div><div class="sccap"><div class="l">Wet</div><div class="i" style="color:var(--high)">1.5</div><div class="s">cash shifts out</div></div></div>
-        <div><div class="barbox"><div class="pbar cin" style="--h:265px;--bd:.8s"></div><div class="pbar cout" style="--h:185px;--bd:.95s"></div></div><div class="sccap"><div class="l">Dry</div><div class="i" style="color:var(--low)">0.5</div><div class="s">cash earlier</div></div></div>
+      <div class="pk"><span class="d"></span>Forecast basis</div>
+      <div class="ph" style="font-size:58px">The live forecast<br>is the basis</div>
+      <div style="margin-top:30px">
+        <div style="display:flex;gap:10px;align-items:flex-end;height:150px">
+          <div style="flex:1;height:92px;border-radius:8px 8px 0 0;background:linear-gradient(180deg,#14b8a6,#0d9488)"></div>
+          <div style="flex:1;height:120px;border-radius:8px 8px 0 0;background:linear-gradient(180deg,#14b8a6,#0d9488)"></div>
+          <div style="flex:1;height:104px;border-radius:8px 8px 0 0;background:linear-gradient(180deg,#14b8a6,#0d9488)"></div>
+          <div style="flex:1;height:128px;border-radius:8px 8px 0 0;background:#cbd5e1"></div>
+          <div style="flex:1;height:138px;border-radius:8px 8px 0 0;background:#cbd5e1"></div>
+          <div style="flex:1;height:120px;border-radius:8px 8px 0 0;background:#cbd5e1"></div>
+          <div style="flex:1;height:144px;border-radius:8px 8px 0 0;background:#cbd5e1"></div>
+          <div style="flex:1;height:126px;border-radius:8px 8px 0 0;background:#cbd5e1"></div>
+          <div style="flex:1;height:150px;border-radius:8px 8px 0 0;background:#cbd5e1"></div>
+          <div style="flex:1;height:130px;border-radius:8px 8px 0 0;background:#cbd5e1"></div>
+          <div style="flex:1;height:140px;border-radius:8px 8px 0 0;background:#cbd5e1"></div>
+          <div style="flex:1;height:122px;border-radius:8px 8px 0 0;background:#cbd5e1"></div>
+          <div style="flex:1;height:134px;border-radius:8px 8px 0 0;background:#cbd5e1"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:16px;font-size:26px">
+          <span><b style="color:var(--accent-deep)">Live weather</b> <span style="color:var(--ink-muted)">· ~2 wks (Open-Meteo)</span></span>
+          <span style="color:var(--ink-muted)">Seasonal climatology · weeks 3–13</span>
+        </div>
       </div>
       <div class="spacer"></div>
-      <div class="honest" style="background:var(--high-bg);border-color:#fecaca;color:#991b1b"><span class="ic">≈</span><div><b>~€281k of billing</b> is pushed beyond the 13-week horizon in the wet quarter — tracked as spillover, not lost. Timing shifts; volume doesn't.</div></div>
+      <div class="honest"><span class="ic">ℹ</span><div><b>One operating basis.</b> Wet/dry intensity variants are kept only for internal stress-testing &amp; audit — not a CFO scenario toggle.</div></div>
     </section>
 
     <!-- RISKS -->
@@ -427,16 +443,20 @@ kbd{font-family:ui-monospace,Menlo,monospace;font-size:11px;background:rgba(255,
     <!-- MAP -->
     <section class="panel" id="n-map" data-node="map" style="left:4820px;top:3060px;width:1260px;height:840px">
       <div class="badge">09</div>
-      <div class="pk"><span class="d"></span>Locations &amp; weather</div>
-      <div class="ph" style="font-size:58px">Risk on the map</div>
-      <div class="mapbox" style="margin-top:22px">
+      <div class="pk"><span class="d"></span>Map &amp; live weather</div>
+      <div class="ph" style="font-size:54px">Risk on the map</div>
+      <div class="mapbox" style="margin-top:18px">
         <div class="mk high" style="left:60%;top:62%"><div class="dot"></div><div class="nm">Ummels · Brunssum</div></div>
         <div class="mk med" style="left:44%;top:74%"><div class="dot"></div><div class="nm">Opco C · Maastricht</div></div>
         <div class="mk med" style="left:38%;top:48%"><div class="dot"></div><div class="nm">Opco A · proxy</div></div>
         <div class="mk low" style="left:56%;top:34%"><div class="dot"></div><div class="nm">Company E · proxy</div></div>
         <div class="legend"><div><i style="background:var(--high)"></i>High</div><div><i style="background:var(--medium)"></i>Medium</div><div><i style="background:var(--low)"></i>Low</div></div>
       </div>
-      <div class="ps" style="margin-top:16px">Leaflet on web · native MapKit on iOS. Only Ummels is a real location; rest are labelled proxies.</div>
+      <div class="row" style="flex-wrap:wrap;gap:10px;margin-top:14px">
+        <span class="ppill live"><span class="dot"></span>Live weather: Open-Meteo + RapidAPI</span>
+        <span class="ppill">Air quality · AQI / PM2.5</span>
+      </div>
+      <div class="ps" style="margin-top:12px">Leaflet on web · native MapKit on iOS. Only Ummels is a real location; rest are labelled proxies.</div>
     </section>
 
     <!-- iOS -->
@@ -451,24 +471,42 @@ kbd{font-family:ui-monospace,Menlo,monospace;font-size:11px;background:rgba(255,
       <div class="ps" style="margin-top:16px">SwiftUI + supabase-swift · same accounts, same RLS-protected tables. Check covenant headroom before a lender call.</div>
     </section>
 
-    <!-- AGENT -->
+    <!-- AGENT — real LLM grounded in the numbers, deterministic fallback, bilingual -->
     <section class="panel" id="n-agent" data-node="agent" style="left:1820px;top:4060px;width:1320px;height:880px">
       <div class="badge">11</div>
-      <div class="pk"><span class="d"></span>CFO assistant</div>
+      <div class="pk"><span class="d"></span>AI CFO assistant</div>
       <div class="ph" style="font-size:54px">Ask the forecast</div>
-      <div class="chat" style="margin-top:22px">
+      <div class="chat" style="margin-top:20px">
         <div class="bub q">Which company is most exposed to weather?</div>
         <div class="bub a">
           <div class="tt">Opco C (Gilde) — highest exposure</div>
-          <ul><li>Tight cash (€200k) vs €200k covenant floor</li><li>Wet quarter compresses headroom to ~zero</li></ul>
+          <ul><li>Tight cash (€200k) vs €200k covenant floor</li><li>Sustained bad-weather delay compresses headroom to ~zero</li></ul>
           <div class="srcs"><span class="src">forecast_weeks</span><span class="src">weather_weekly</span><span class="src">data_inventory</span></div>
         </div>
       </div>
-      <div class="ps" style="margin-top:16px">Retrieval over internal data — every answer cites its sources. Not a generic chatbot.</div>
+      <div class="spacer"></div>
+      <div class="row" style="flex-wrap:wrap;gap:12px;margin-top:8px">
+        <span class="ppill">Real LLM · grounded in the numbers</span>
+        <span class="ppill">Deterministic fallback (no key needed)</span>
+        <span class="ppill">Bilingual NL / EN</span>
+      </div>
+      <div class="ps" style="margin-top:14px">Embedded on the CFO dashboard — it even answers <b style="color:var(--ink)">“what do I say if challenged?”</b> Not a generic chatbot.</div>
+    </section>
+
+    <!-- OPERATE — configurable controls + email findings + connectors -->
+    <section class="panel" id="n-operate" data-node="operate" style="left:3320px;top:4060px;width:1320px;height:880px">
+      <div class="badge">12</div>
+      <div class="pk"><span class="d"></span>Built to operate</div>
+      <div class="ph" style="font-size:56px">Configurable &amp; shareable</div>
+      <div class="col" style="gap:18px;margin-top:24px">
+        <div class="pcard"><h4>Live controls</h4><p>Horizon, the “bad workday” definition and the warning-floor are knobs in the UI — every assumption is adjustable, nothing hardcoded.</p></div>
+        <div class="pcard"><h4>Email findings</h4><p>Escalate any dashboard’s findings — with a deep link back — by email in one click.</p></div>
+        <div class="pcard"><h4>Accounting connectors</h4><p>Exact (OAuth2) · SnelStart (API key) · Gilde &amp; Excel — status-tracked, credentials server-side.</p></div>
+      </div>
     </section>
 
     <!-- TECH -->
-    <section class="panel" id="n-tech" data-node="tech" style="left:3320px;top:4060px;width:1320px;height:880px">
+    <section class="panel" id="n-tech" data-node="tech" style="left:4820px;top:4060px;width:1260px;height:880px">
       <div class="badge">12</div>
       <div class="pk"><span class="d"></span>Under the hood</div>
       <div class="ph" style="font-size:62px">The stack</div>
@@ -485,7 +523,7 @@ kbd{font-family:ui-monospace,Menlo,monospace;font-size:11px;background:rgba(255,
     </section>
 
     <!-- IMPACT / closer -->
-    <section class="panel" id="n-impact" data-node="impact" style="left:4820px;top:4060px;width:1260px;height:880px">
+    <section class="panel" id="n-impact" data-node="impact" style="left:2400px;top:5060px;width:1600px;height:900px">
       <div class="badge" style="background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.2);color:#94a3b8">13</div>
       <div class="pk"><span class="d"></span>Impact</div>
       <div class="ph" style="font-size:58px">Main risk in<br>10 seconds</div>
@@ -497,7 +535,8 @@ kbd{font-family:ui-monospace,Menlo,monospace;font-size:11px;background:rgba(255,
       </div>
       <div class="spacer"></div>
       <div class="pb" style="color:#cbd5e1">Drill <b style="color:#fff">portfolio → opco → week → source</b> in 3 clicks.</div>
-      <div class="row" style="gap:16px;margin-top:18px;flex-wrap:wrap">
+      <div class="pb" style="color:#94a3b8;font-size:30px;margin-top:10px">Next: LTM-EBITDA overlay + weather-variance waterfall.</div>
+      <div class="row" style="gap:16px;margin-top:16px;flex-wrap:wrap">
         <span class="acct">vercel deploy</span><span class="acct">cfo@altis.demo · AltisDemo!2026</span>
       </div>
     </section>
@@ -526,12 +565,14 @@ kbd{font-family:ui-monospace,Menlo,monospace;font-size:11px;background:rgba(255,
   const linksSvg=document.getElementById('links');
 
   // tour order + friendly titles
-  const PATH=['hero','problem','insight','data','model','scenarios','risks','roles','trace','map','ios','agent','tech','impact'];
+  const PATH=['hero','problem','insight','data','model','scenarios','risks','roles','trace','map','ios','agent','operate','tech','impact'];
   const TITLE={hero:'Altis',problem:'The problem',insight:'The insight',data:'Data foundation',model:'Forecast engine',
-    scenarios:'Scenarios',risks:'Risk engine',roles:'Role dashboards',trace:'Traceability',map:'Map',ios:'Native iOS',
-    agent:'CFO assistant',tech:'Tech stack',impact:'Impact'};
+    scenarios:'Forecast basis',risks:'Risk engine',roles:'Role dashboards',trace:'Traceability',map:'Map & live weather',ios:'Native iOS',
+    agent:'AI assistant',operate:'Operate & share',tech:'Tech stack',impact:'Impact'};
   const nodes={};
   PATH.forEach(id=>{ nodes[id]=document.getElementById('n-'+id); });
+  // auto-number the tour badges from PATH order (hero has no badge)
+  PATH.forEach((id,i)=>{ const b=nodes[id]&&nodes[id].querySelector('.badge'); if(b) b.textContent=String(i).padStart(2,'0'); });
 
   // transform state (screen = world*scale + t)
   let scale=1, tx=0, ty=0, idx=-1; // idx -1 = overview
