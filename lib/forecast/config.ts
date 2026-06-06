@@ -32,9 +32,8 @@ export const DEFAULT_PARAMS: Omit<ForecastParams, 'startWeek' | 'openingCash'> =
   weatherIntensity: 1.0,
 };
 
-/** Scenario-specific weather intensity. Scenarios shift cash *timing*, not the
- *  total amount of work — delayed billing is caught up later (possibly beyond
- *  the 13-week window, which is why a wet quarter dents in-horizon liquidity). */
+/** Internal stress-test weather intensity. The operating dashboard always uses
+ *  the live forecast basis; these variants are retained for audit/model tests. */
 export const SCENARIO_WEATHER_INTENSITY: Record<Scenario, number> = {
   base: 1.0,
   wet_quarter: 1.5,

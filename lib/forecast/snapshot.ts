@@ -70,7 +70,7 @@ async function main() {
   }
 
   db.close();
-  console.log(`Snapshot persisted: ${weekRows} forecast_weeks rows, ${traceRows} trace_links rows (3 scenarios x companies + portfolio).`);
+  console.log(`Snapshot persisted: ${weekRows} forecast_weeks rows, ${traceRows} trace_links rows (operating forecast plus internal stress tests).`);
 }
 
 main().catch((error) => {

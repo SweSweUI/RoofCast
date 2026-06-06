@@ -1,10 +1,9 @@
 import type { ForecastParams, Scenario } from '../types';
-import { SCENARIOS } from '../types';
 import { DbUnavailableError } from '../db';
 
 export function parseScenario(sp: URLSearchParams): Scenario {
-  const s = sp.get('scenario') as Scenario | null;
-  return s && SCENARIOS.includes(s) ? s : 'base';
+  sp.get('scenario'); // accepted for backward-compatible URLs; dashboard APIs use live forecast.
+  return 'base';
 }
 
 /** Parse the configurable forecast overrides exposed as dashboard controls. */

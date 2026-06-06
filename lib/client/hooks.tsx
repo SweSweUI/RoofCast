@@ -6,10 +6,8 @@ import type { Scenario } from '@/lib/types';
 export interface DashboardState {
   scenario: Scenario;
   company: string; // 'portfolio' or a company code
-  setScenario: (s: Scenario) => void;
   setCompany: (c: string) => void;
   setParam: (key: string, value: string) => void;
-  qs: string; // current scenario+company query string for API calls
 }
 
 export function useDashboardState(): DashboardState {
@@ -20,23 +18,29 @@ export function useDashboardState(): DashboardState {
   const scenario: Scenario = 'base';
   const company = sp.get('company') ?? 'portfolio';
 
+  useEffect(() => {
+    if (!sp.has('scenario')) return;
+    const next = new URLSearchParams(sp.toString());
+    next.delete('scenario');
+    const query = next.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  }, [sp, router, pathname]);
+
   const setParam = useCallback(
     (key: string, value: string) => {
       const next = new URLSearchParams(sp.toString());
+      next.delete('scenario');
       next.set(key, value);
       router.replace(`${pathname}?${next.toString()}`, { scroll: false });
     },
     [sp, router, pathname],
   );
 
-  const qs = `scenario=${scenario}&company=${encodeURIComponent(company)}`;
   return {
     scenario,
     company,
-    setScenario: () => setParam('scenario', 'base'),
     setCompany: (c) => setParam('company', c),
     setParam,
-    qs,
   };
 }
 
@@ -46,7 +50,7 @@ interface ApiState<T> {
   loading: boolean;
 }
 
-/** Minimal fetcher with keep-previous-data (no flicker on scenario change). */
+/** Minimal fetcher with keep-previous-data (no flicker on company/view changes). */
 export function useApi<T = unknown>(url: string | null): ApiState<T> {
   const [state, setState] = useState<ApiState<T>>({ data: null, error: null, loading: !!url });
   const lastData = useRef<T | null>(null);

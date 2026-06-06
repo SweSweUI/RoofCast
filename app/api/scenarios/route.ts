@@ -7,8 +7,8 @@ import { jsonError, parseOverrides } from '@/lib/server/query';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-/** All three scenarios for one company (or the portfolio) — powers the
- *  scenario-comparison chart and the headline scenario KPI strip. */
+/** Internal stress-test comparison endpoint. The operating dashboard uses the
+ *  live forecast basis and does not expose this as a CFO selection workflow. */
 export async function GET(req: Request) {
   try {
     const sp = new URL(req.url).searchParams;

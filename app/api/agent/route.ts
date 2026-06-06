@@ -1,6 +1,6 @@
 import { computeForecast, computePortfolio } from '@/lib/forecast';
 import { getCompanyByCode, getInventory, getStatsArtifact } from '@/lib/queries';
-import { SCENARIOS, type ForecastResult, type ForecastWeek, type Scenario } from '@/lib/types';
+import type { ForecastResult, ForecastWeek, Scenario } from '@/lib/types';
 import { eur, eurCompact, signedEur, dateShort } from '@/lib/format';
 import { jsonError } from '@/lib/server/query';
 
@@ -29,7 +29,7 @@ export async function POST(req: Request) {
   try {
     const body = (await req.json()) as AgentRequest;
     const question = String(body.question ?? '').trim();
-    const scenario = body.scenario && SCENARIOS.includes(body.scenario) ? body.scenario : 'base';
+    const scenario: Scenario = 'base';
     const companyCode = body.company ?? 'portfolio';
     if (!question) return Response.json({ error: 'question_required' }, { status: 400 });
 
@@ -160,7 +160,7 @@ function buildAnswer(
       bullets: [
         `Loaded ${files} source files and ${rows} transaction rows.`,
         ...missing.slice(0, 5),
-        `Weather lag stats remain suggestive, not causal. Headline Ummels lag-5 p-value: ${stats?.companies?.ummels?.wetdry?.find?.((r: any) => r.lag === 5)?.p_value ?? 'see stats page'}.`,
+        `Weather lag stats remain suggestive, not causal. Headline Ummels lag-5 p-value: ${stats?.companies?.ummels?.wet_dry?.find?.((r: any) => r.lag === 5)?.p_value ?? 'see stats page'}.`,
       ],
       sources: ['data_inventory.json', 'stats.json', 'source_files', 'assumptions'],
     };
