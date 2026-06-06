@@ -175,6 +175,49 @@ export default function SettingsPage() {
         covenantFloor={settings.covenantFloor}
       />
 
+      {/* Evidence & reproducibility — downloadable analyst notebook + report. */}
+      <Card
+        title={nl ? 'Bewijs & reproduceerbaarheid' : 'Evidence & reproducibility'}
+        subtitle={nl
+          ? 'Download de volledige onderbouwing achter de forecast'
+          : 'Download the full evidence behind the forecast'}
+      >
+        <div className="divide-y divide-panel-line">
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-3">
+            <div className="max-w-xl">
+              <div className="text-sm font-semibold text-ink">
+                {nl ? 'Analist-notebook' : 'Analyst notebook'}{' '}
+                <span className="text-2xs font-normal text-ink-faint">.ipynb · ~1.5&nbsp;MB</span>
+              </div>
+              <p className="mt-0.5 text-2xs leading-relaxed text-ink-muted">
+                {nl
+                  ? 'Elke grafiek en elk getal end-to-end reproduceerbaar in Python — draai lokaal om de methodiek te verifiëren.'
+                  : 'Every chart and number reproduced end-to-end in Python — run it locally to verify the methodology.'}
+              </p>
+            </div>
+            <DownloadButton href="/api/analyst-notebook">
+              {nl ? 'Download notebook' : 'Download notebook'}
+            </DownloadButton>
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-3">
+            <div className="max-w-xl">
+              <div className="text-sm font-semibold text-ink">
+                {nl ? 'Toelichtingsrapport' : 'Explainability report'}{' '}
+                <span className="text-2xs font-normal text-ink-faint">.html</span>
+              </div>
+              <p className="mt-0.5 text-2xs leading-relaxed text-ink-muted">
+                {nl
+                  ? 'Een code-vrij rapport: data, aannames, seizoenspatroon, weertiming en covenant-logica, met de dashboardgrafieken inline.'
+                  : 'A code-free written report: data, assumptions, seasonality, weather timing and covenant logic, with the dashboard charts inline.'}
+              </p>
+            </div>
+            <DownloadButton href="/api/report">
+              {nl ? 'Download rapport' : 'Download report'}
+            </DownloadButton>
+          </div>
+        </div>
+      </Card>
+
       {/* Methodology — supporting documentation, collapsed by default so it
           doesn't compete with the configuration controls above. */}
       <section className="rounded-lg border border-panel-line bg-panel shadow-card">
@@ -221,6 +264,30 @@ export default function SettingsPage() {
 }
 
 // --- small controls ---------------------------------------------------------
+
+function DownloadButton({ href, children }: { href: string; children: ReactNode }) {
+  return (
+    <a
+      href={href}
+      download
+      className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-ink bg-ink px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-ink/90"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        className="h-4 w-4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden
+      >
+        <path d="M12 3v11m0 0l-4-4m4 4l4-4M5 21h14" />
+      </svg>
+      {children}
+    </a>
+  );
+}
 
 function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
   return (
