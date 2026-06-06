@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/>
+<style>
+  :root{--ink:#0f172a;--muted:#475569;--faint:#94a3b8;--line:#e2e8f0;--accent:#0d9488;--accent-deep:#0f766e;--amber:#b45309}
+  *{margin:0;box-sizing:border-box}
+  body{background:#0b1220;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    min-height:100vh;display:grid;place-items:center;padding:40px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:24px;box-shadow:0 30px 80px rgba(0,0,0,.4);
+    padding:40px 48px;width:1100px}
+  .k{font-size:15px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-deep);
+    display:flex;align-items:center;gap:10px}
+  .k .d{width:10px;height:10px;border-radius:99px;background:var(--accent);box-shadow:0 0 0 5px #ccfbf1}
+  h1{font-size:46px;letter-spacing:-1.5px;color:var(--ink);margin:14px 0 4px}
+  .sub{font-size:19px;color:var(--muted);margin-bottom:18px}
+  .cap{font-size:18px;color:var(--muted);line-height:1.5;margin-top:18px}
+  .cap b{color:var(--ink)}
+  svg{width:100%;height:auto;display:block}
+  .ylab{font-size:14px;fill:var(--faint)}
+  .xlab{font-size:16px;fill:var(--ink);font-weight:600}
+  .vlab{font-size:13px;fill:var(--muted);font-weight:700}
+  .ann{font-size:15px;font-weight:700}
+</style></head>
+<body>
+  <div class="card">
+    <div class="k"><span class="d"></span>Seasonality · from the data</div>
+    <h1>Billing is seasonal</h1>
+    <div class="sub">Average monthly revenue, all four opcos · 2023–2026</div>
+    <svg id="chart" viewBox="0 0 1040 420"></svg>
+    <div class="cap">Two dips — <b>January</b> (winter) and <b>August</b> (bouwvak / summer holiday) — and a strong <b>autumn peak</b>. The forecast's baseline learns this pattern per ISO-week, then the weather model shifts timing on top.</div>
+  </div>
+<script>
+  const V=[1.34,2.25,3.26,2.94,2.54,2.37,2.87,1.23,3.43,3.06,2.81,2.92];
+  const M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const W=1040,H=420, L=56,R=20,T=46,B=64;
+  const x=i=> L + i*( (W-L-R)/11 );
+  const yMax=3.8, y=v=> (H-B) - (v/yMax)*(H-B-T);
+  const svg=document.getElementById('chart');
+  let p='';
+  // gridlines
+  for(let g=1;g<=3;g++){const gy=y(g);p+=`<line x1="${L}" y1="${gy}" x2="${W-R}" y2="${gy}" stroke="#eef2f7" stroke-width="1.5"/><text class="ylab" x="${L-10}" y="${gy+5}" text-anchor="end">€${g}M</text>`;}
+  // area + line
+  let line=V.map((v,i)=>`${i?'L':'M'}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(' ');
+  let area=`M${x(0)} ${H-B} `+V.map((v,i)=>`L${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(' ')+` L${x(11)} ${H-B} Z`;
+  p+=`<path d="${area}" fill="#0d9488" opacity="0.13"/>`;
+  p+=`<path d="${line}" fill="none" stroke="#0d9488" stroke-width="4.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+  // dots + labels
+  V.forEach((v,i)=>{
+    const dip = (i===0||i===7);
+    const c = dip?'#b45309':'#0d9488';
+    p+=`<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="${dip?9:7}" fill="${c}" stroke="#fff" stroke-width="3"/>`;
+    p+=`<text class="vlab" x="${x(i).toFixed(1)}" y="${(y(v)-16).toFixed(1)}" text-anchor="middle">${v.toFixed(1)}</text>`;
+    p+=`<text class="xlab" x="${x(i).toFixed(1)}" y="${H-26}" text-anchor="middle">${M[i]}</text>`;
+  });
+  // annotations
+  p+=`<text class="ann" fill="#b45309" x="${x(0)}" y="${y(V[0])+34}" text-anchor="middle">winter low</text>`;
+  p+=`<text class="ann" fill="#b45309" x="${x(7)}" y="${y(V[7])+34}" text-anchor="middle">bouwvak</text>`;
+  p+=`<text class="ann" fill="#0f766e" x="${x(8)}" y="${y(V[8])-30}" text-anchor="middle">autumn peak</text>`;
+  svg.innerHTML=p;
+</script>
+</body></html>
