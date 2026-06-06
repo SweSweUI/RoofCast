@@ -6,14 +6,13 @@ import {
   Legend,
   Line,
   ReferenceArea,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts';
 import type { ForecastWeek } from '@/lib/types';
 import { weekShort } from '@/lib/format';
-import { CHART, ChartTooltip, axisTick, eurAxis } from './common';
+import { CHART, ChartFrame, ChartTooltip, axisTick, eurAxis } from './common';
 
 export function CashflowChart({ weeks }: { weeks: ForecastWeek[] }) {
   const data = weeks.map((w) => ({
@@ -26,7 +25,12 @@ export function CashflowChart({ weeks }: { weeks: ForecastWeek[] }) {
   const liveCount = weeks.filter((w) => w.isLiveWeather).length;
 
   return (
-    <ResponsiveContainer width="100%" height={300}>
+    <ChartFrame
+      name="cashflow"
+      height={300}
+      rows={data}
+      columns={['week', 'Cash-in', 'Cash-out', 'Closing cash', 'live']}
+    >
       <ComposedChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
         <CartesianGrid stroke={CHART.grid} vertical={false} />
         {liveCount > 0 && (
@@ -47,6 +51,6 @@ export function CashflowChart({ weeks }: { weeks: ForecastWeek[] }) {
         <Bar yAxisId="left" dataKey="Cash-out" fill={CHART.cashout} radius={[2, 2, 0, 0]} maxBarSize={22} />
         <Line yAxisId="right" type="monotone" dataKey="Closing cash" stroke={CHART.closing} strokeWidth={2} dot={{ r: 2 }} />
       </ComposedChart>
-    </ResponsiveContainer>
+    </ChartFrame>
   );
 }
