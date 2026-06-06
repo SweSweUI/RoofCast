@@ -24,20 +24,32 @@ final class AppState: ObservableObject {
 
     /// Restore any persisted session on launch.
     func bootstrap() async {
-        if let session = await service.currentSession() {
+        let defaults = UserDefaults.standard
+        let autoEmail = (defaults.string(forKey: "autologinEmail") ?? "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let autoPassword = defaults.string(forKey: "autologinPassword") ?? ""
+
+        // 1) Reuse a persisted session — but ONLY if it is still valid.
+        //    supabase-swift emits the stored session even when expired
+        //    (supabase/supabase-swift#822); an expired token then reads as
+        //    ANONYMOUS under RLS, returning EMPTY data with no error and
+        //    stranding the app on a blank "0-week" dashboard. Reject it.
+        if let session = await service.currentSession(), !session.isExpired {
             await loadProfile(for: session.user)
             phase = .signedIn
             return
         }
-        // Automation affordance: when launched with -autologinEmail / -autologinPassword
-        // (e.g. UI tests or demo capture), sign in headlessly. No-op in normal use.
-        let defaults = UserDefaults.standard
-        if let email = defaults.string(forKey: "autologinEmail"),
-           let password = defaults.string(forKey: "autologinPassword"),
-           !email.isEmpty, !password.isEmpty {
-            await signIn(email: email, password: password)
+
+        // 2) Automation / demo affordance: when launched with -autologinEmail /
+        //    -autologinPassword (UI tests or demo capture), sign in headlessly.
+        if !autoEmail.isEmpty, !autoPassword.isEmpty {
+            await signIn(email: autoEmail, password: autoPassword)
             if phase == .signedIn { return }
         }
+
+        // 3) Stale/invalid session and no autologin → drop it and show login so
+        //    the user can re-authenticate (e.g. the "Explore the demo" button).
+        try? await service.signOut()
         phase = .signedOut
     }
 
